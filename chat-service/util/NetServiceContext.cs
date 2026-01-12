@@ -425,6 +425,248 @@ namespace chat_service.util
             }
         }
 
+        /// <summary>
+        /// 业务数据处理
+        /// </summary>
+        /// <param name="frameType"></param>
+        /// <param name="netResponse"></param>
+        /// <param name="obj"></param>
+        public static void dataHandler(byte frameType, NetResponse netResponse, object obj)
+        {
+            if (frameType == (byte)0) // 0：登录帧响应
+            {
+                Login_Register_Form.loginDelegateHandler(obj, netResponse);
+
+            }
+            else if (frameType == (byte)1) // 1： 登出帧响应
+            {
+                ((Login_Register_Form)obj).Invoke(new MethodInvoker(delegate () { ((Login_Register_Form)obj).Show(); }));
+            }
+            else if (frameType == (byte)2) // 2： 文本帧响应
+            {
+                Main_Form.main_Form.message_richTextBox.Invoke(new MethodInvoker(delegate ()
+                {
+                    Main_Form.main_Form.message_richTextBox.AppendText("[ " + DateTime.Now.ToLocalTime().ToString() + " ] 来自用户 [ " + ((CommonRes)netResponse.getCommonRes()).getUserName() + " ] 数据: "
+                    + ((CommonRes)netResponse.getCommonRes()).getMessage() + "\r\n");
+                }));
+
+                // 由于文件在线传输帧被服务端以聊天服务的文本帧发送，此处需要判断是否为在线文件传输帧
+                FileService.isNeedToFileOnlineTransport(netResponse);
+
+            }
+            else if (frameType == (byte)3) // 返回请求帧为3的数据，刷新在线用户列表
+            {
+                List<UserModel> list = (List<UserModel>)netResponse.getCommonRes();
+                Main_Form.main_Form.user_list_dataGridView.Invoke(new MethodInvoker(delegate ()
+                {
+                    Main_Form.main_Form.user_list_dataGridView.Rows.Clear();
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        Main_Form.main_Form.user_list_dataGridView.Rows.Add();
+                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[0].Value = i + 1;
+                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[1].Value = list[i].getUserName();
+                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[2].Value = Utils.ToDateTime(list[i].getLastLoginDate());
+                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[3].Value = Utils.ToDateTime(list[i].getRegisterDate());
+                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[4].Value = (list[i].getStatus() == "1" ? "在线" : "未知状态");
+                    }
+                }));
+            }
+            else if (frameType == (byte)4) // 4: 注册帧响应
+            {
+                Register_Form.registerDelegateHandler(obj, netResponse);
+            }
+            else if (frameType == USER_RESPONSE) // 0x34
+            {
+                // Fallback attempt: check content or just treat as logic success.
+                // Assuming it routes to Login or generic handler.
+                // If it's Login Response:
+                Login_Register_Form.loginDelegateHandler(obj, netResponse);
+            }
+            else if (frameType == (byte)5) // 5: 心跳帧响应
+            {
+                Main_Form.main_Form.result_label.Invoke(new MethodInvoker(delegate ()
+                {
+                    if ("HEART_RESPONSE".Equals(((CommonRes)netResponse.getCommonRes()).getMessage()))
+                    {
+                        Main_Form.main_Form.result_label.Text = "网络连接正常......";
+                    }
+                }));
+            }
+            else if (frameType == (byte)6 || frameType == DIR_RESPONSE) // 6: 个人网盘文件夹刷新 OR DIR_RESPONSE (if they share structure)
+            {
+                FileDto fileDto = (FileDto)netResponse.getCommonRes();
+                // 设置当前文件夹下的文件数量
+                Main_Form.main_Form.file_sum_count_label.Invoke(new MethodInvoker(delegate ()
+                {
+                    if (fileDto != null)
+                        Main_Form.main_Form.file_sum_count_label.Text = fileDto.getFileCount().ToString();
+                }));
+
+                Main_Form.main_Form.personal_file_treeView.Invoke(new MethodInvoker(delegate ()
+                {
+                    // 判断当前节点是否为最顶层节点
+                    if (fileDto.getPid() == -1)
+                    {
+                        // 清空所有节点
+                        Main_Form.main_Form.personal_file_treeView.Nodes.Clear();
+                        // 创建根节点
+                        TreeNode rootTreeNode = Main_Form.main_Form.personal_file_treeView.Nodes.Add(fileDto.getFileName());
+                        rootTreeNode.Tag = fileDto;
+
+                        // 判断是否有子节点
+                        if (null != fileDto.getChildFileList() && fileDto.getChildFileList().Count > 0)
+                        {
+                            List<FileDto> list = fileDto.getChildFileList();
+                            // 创建子节点
+                            for (int i = 0; i < list.Count; i++)
+                            {
+                                TreeNode childTreeNode = rootTreeNode.Nodes.Add(list[i].getFileName());
+                                childTreeNode.Tag = list[i];
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // 处理子文件夹还是处理包含的文件
+                        if (fileDto.getHasChild() == "Y")
+                        {
+                            // 含有子文件夹则显示子文件夹  
+                            appendFileNode(fileDto);
+                        }
+                        else
+                        {
+                            // 处理子文件集合
+                            fileListHandle(fileDto);
+                        }
+
+                    }
+                    Main_Form.main_Form.personal_file_treeView.ExpandAll();
+                }));
+            }
+            else if (frameType == (byte)7) // 7: 个人网盘文件夹创建
+            {
+                FileDto fileDto = (FileDto)netResponse.getCommonRes();
+
+                if (fileDto.getRepeatCreate() == "Y")
+                {
+                    File_Create_Form.file_Create_Form.create_description_label.Invoke(new MethodInvoker(delegate ()
+                    {
+                        File_Create_Form.file_Create_Form.create_description_label.Visible = true;
+                        File_Create_Form.file_Create_Form.create_description_label.Text = "创建的文件夹已存在";
+                    }));
+                }
+                else if (fileDto.getFileCount() > 0)
+                {
+                    File_Create_Form.file_Create_Form.create_description_label.Invoke(new MethodInvoker(delegate ()
+                    {
+                        File_Create_Form.file_Create_Form.create_description_label.Visible = true;
+                        File_Create_Form.file_Create_Form.create_description_label.Text = "当前文件夹下已含有文件，无法创建文件夹";
+                    }));
+                }
+                else
+                {
+                    File_Create_Form.file_Create_Form.create_description_label.Invoke(new MethodInvoker(delegate ()
+                    {
+                        File_Create_Form.file_Create_Form.create_description_label.Visible = false;
+                    }));
+                    File_Create_Form.file_Create_Form.Invoke(new MethodInvoker(delegate () { File_Create_Form.file_Create_Form.Close(); }));
+                    // 创建成功刷新文件夹,从头开始刷新
+                    UserModel userModel = new UserModel();
+                    userModel.setRefreshFile("true");
+                    userModel.setUserName(Main_Form.main_Form.commonRes.getUserName());
+                    userModel.setFileName(Main_Form.main_Form.commonRes.getUserName());
+                    userModel.setFilePath(Main_Form.main_Form.commonRes.getUserName());
+                    userModel.setCurrentPage(1);
+                    userModel.setPageSize(10);
+                    NetServiceContext.sendMessageNotWaiting(6, JsonConvert.SerializeObject(userModel), obj);
+                }
+            }
+            else if (frameType == (byte)8) // 个人网盘文件夹名称修改
+            {
+                File_Create_Form.file_Create_Form.create_description_label.Invoke(new MethodInvoker(delegate ()
+                {
+                    File_Create_Form.file_Create_Form.create_description_label.Visible = false;
+                }));
+                File_Create_Form.file_Create_Form.Invoke(new MethodInvoker(delegate () { File_Create_Form.file_Create_Form.Close(); }));
+
+                FileDto fileDto = (FileDto)netResponse.getCommonRes();
+                Main_Form.main_Form.personal_file_treeView.Invoke(new MethodInvoker(delegate ()
+                {
+                    // 根据当前节点fileDto判断处于文件夹树中哪一个节点下,追加相应节点
+                    appendFileNode(fileDto);
+                    Main_Form.main_Form.personal_file_treeView.ExpandAll();
+                }));
+            }
+            else if (frameType == (byte)11)
+            {
+                List<long> list = (List<long>)netResponse.getCommonRes();
+                Main_Form.main_Form.file_list_dataGridView.Invoke(new MethodInvoker(delegate ()
+                {
+                    int count = Main_Form.main_Form.file_list_dataGridView.Rows.Count;
+                    if (count > 0)
+                    {
+                        // 循环遍历删除行记录
+                        for (int i = 0; i < list.Count; i++)
+                        {
+                            for (int j = (count - 1); j >= 0; j--)
+                            {
+                                string tag = Main_Form.main_Form.file_list_dataGridView.Rows[j].Cells[9].Value.ToString();
+                                if (tag == list[i].ToString())
+                                {
+                                    Main_Form.main_Form.file_list_dataGridView.Rows.RemoveAt(j);
+                                    count = Main_Form.main_Form.file_list_dataGridView.Rows.Count;
+                                }
+                            }
+                        }
+                    }
+
+                }));
+
+                // 恢复button的权限
+                Main_Form.main_Form.all_select_button.Invoke(new MethodInvoker(delegate ()
+                {
+                    Main_Form.main_Form.all_select_button.Enabled = true;
+                }));
+
+                Main_Form.main_Form.all_cancel_select_button.Invoke(new MethodInvoker(delegate ()
+                {
+                    Main_Form.main_Form.all_cancel_select_button.Enabled = true;
+                }));
+
+                Main_Form.main_Form.all_select_download_button.Invoke(new MethodInvoker(delegate ()
+                {
+                    Main_Form.main_Form.all_select_download_button.Enabled = true;
+                }));
+
+                Main_Form.main_Form.all_select_delete_button.Invoke(new MethodInvoker(delegate ()
+                {
+                    Main_Form.main_Form.all_select_delete_button.Enabled = true;
+                }));
+
+                Main_Form.main_Form.all_file_refresh_button.Invoke(new MethodInvoker(delegate ()
+                {
+                    Main_Form.main_Form.all_file_refresh_button.Enabled = true;
+                }));
+            }
+            else if (frameType == (byte)12)
+            {
+                List<UserModel> list = (List<UserModel>)netResponse.getCommonRes();
+                Main_Form.main_Form.user_list_dataGridView.Invoke(new MethodInvoker(delegate ()
+                {
+                    Main_Form.main_Form.user_list_dataGridView.Rows.Clear();
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        Main_Form.main_Form.user_list_dataGridView.Rows.Add();
+                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[0].Value = i + 1;
+                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[1].Value = list[i].getUserName();
+                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[2].Value = Utils.ToDateTime(list[i].getLastLoginDate());
+                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[3].Value = Utils.ToDateTime(list[i].getRegisterDate());
+                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[4].Value = (list[i].getStatus() == "1" ? "在线" : "未知状态");
+                    }
+                }));
+            }
+        }
+
 
 
 
@@ -734,242 +976,6 @@ namespace chat_service.util
 
 
 
-        // 业务数据处理
-        public static void dataHandler(byte frameType, NetResponse netResponse, object obj)
-        {
-            if (frameType == (byte)0) // 0：登录帧响应
-            {
-                Login_Register_Form.loginDelegateHandler(obj, netResponse);
-
-            }
-            else if (frameType == (byte)1) // 1： 登出帧响应
-            {
-                ((Login_Register_Form)obj).Invoke(new MethodInvoker(delegate () { ((Login_Register_Form)obj).Show(); }));
-            }
-            else if (frameType == (byte)2) // 2： 文本帧响应
-            {
-                Main_Form.main_Form.message_richTextBox.Invoke(new MethodInvoker(delegate ()
-                {
-                    Main_Form.main_Form.message_richTextBox.AppendText("[ " + DateTime.Now.ToLocalTime().ToString() + " ] 来自用户 [ " + ((CommonRes)netResponse.getCommonRes()).getUserName() + " ] 数据: "
-                    + ((CommonRes)netResponse.getCommonRes()).getMessage() + "\r\n");
-                }));
-
-                // 由于文件在线传输帧被服务端以聊天服务的文本帧发送，此处需要判断是否为在线文件传输帧
-                FileService.isNeedToFileOnlineTransport(netResponse);
-
-            }
-            else if (frameType == (byte)3) // 返回请求帧为3的数据，刷新在线用户列表
-            {
-                List<UserModel> list = (List<UserModel>)netResponse.getCommonRes();
-                Main_Form.main_Form.user_list_dataGridView.Invoke(new MethodInvoker(delegate ()
-                {
-                    Main_Form.main_Form.user_list_dataGridView.Rows.Clear();
-                    for (int i = 0; i < list.Count; i++)
-                    {
-                        Main_Form.main_Form.user_list_dataGridView.Rows.Add();
-                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[0].Value = i + 1;
-                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[1].Value = list[i].getUserName();
-                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[2].Value = Utils.ToDateTime(list[i].getLastLoginDate());
-                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[3].Value = Utils.ToDateTime(list[i].getRegisterDate());
-                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[4].Value = (list[i].getStatus() == "1" ? "在线" : "未知状态");
-                    }
-                }));
-            }
-            else if (frameType == (byte)4) // 4: 注册帧响应
-            {
-                Register_Form.registerDelegateHandler(obj, netResponse);
-            }
-            else if (frameType == USER_RESPONSE) // 0x34
-            {
-                // Fallback attempt: check content or just treat as logic success.
-                // Assuming it routes to Login or generic handler.
-                // If it's Login Response:
-                Login_Register_Form.loginDelegateHandler(obj, netResponse);
-            }
-            else if (frameType == (byte)5) // 5: 心跳帧响应
-            {
-                Main_Form.main_Form.result_label.Invoke(new MethodInvoker(delegate ()
-                {
-                    if ("HEART_RESPONSE".Equals(((CommonRes)netResponse.getCommonRes()).getMessage()))
-                    {
-                        Main_Form.main_Form.result_label.Text = "网络连接正常......";
-                    }
-                }));
-            }
-            else if (frameType == (byte)6 || frameType == DIR_RESPONSE) // 6: 个人网盘文件夹刷新 OR DIR_RESPONSE (if they share structure)
-            {
-                FileDto fileDto = (FileDto)netResponse.getCommonRes();
-                // 设置当前文件夹下的文件数量
-                Main_Form.main_Form.file_sum_count_label.Invoke(new MethodInvoker(delegate ()
-                {
-                    if (fileDto != null)
-                        Main_Form.main_Form.file_sum_count_label.Text = fileDto.getFileCount().ToString();
-                }));
-
-                Main_Form.main_Form.personal_file_treeView.Invoke(new MethodInvoker(delegate ()
-                {
-                    // 判断当前节点是否为最顶层节点
-                    if (fileDto.getPid() == -1)
-                    {
-                        // 清空所有节点
-                        Main_Form.main_Form.personal_file_treeView.Nodes.Clear();
-                        // 创建根节点
-                        TreeNode rootTreeNode = Main_Form.main_Form.personal_file_treeView.Nodes.Add(fileDto.getFileName());
-                        rootTreeNode.Tag = fileDto;
-
-                        // 判断是否有子节点
-                        if (null != fileDto.getChildFileList() && fileDto.getChildFileList().Count > 0)
-                        {
-                            List<FileDto> list = fileDto.getChildFileList();
-                            // 创建子节点
-                            for (int i = 0; i < list.Count; i++)
-                            {
-                                TreeNode childTreeNode = rootTreeNode.Nodes.Add(list[i].getFileName());
-                                childTreeNode.Tag = list[i];
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // 处理子文件夹还是处理包含的文件
-                        if (fileDto.getHasChild() == "Y")
-                        {
-                            // 含有子文件夹则显示子文件夹  
-                            appendFileNode(fileDto);
-                        }
-                        else
-                        {
-                            // 处理子文件集合
-                            fileListHandle(fileDto);
-                        }
-
-                    }
-                    Main_Form.main_Form.personal_file_treeView.ExpandAll();
-                }));
-            }
-            else if (frameType == (byte)7) // 7: 个人网盘文件夹创建
-            {
-                FileDto fileDto = (FileDto)netResponse.getCommonRes();
-
-                if (fileDto.getRepeatCreate() == "Y")
-                {
-                    File_Create_Form.file_Create_Form.create_description_label.Invoke(new MethodInvoker(delegate ()
-                    {
-                        File_Create_Form.file_Create_Form.create_description_label.Visible = true;
-                        File_Create_Form.file_Create_Form.create_description_label.Text = "创建的文件夹已存在";
-                    }));
-                }
-                else if (fileDto.getFileCount() > 0)
-                {
-                    File_Create_Form.file_Create_Form.create_description_label.Invoke(new MethodInvoker(delegate ()
-                    {
-                        File_Create_Form.file_Create_Form.create_description_label.Visible = true;
-                        File_Create_Form.file_Create_Form.create_description_label.Text = "当前文件夹下已含有文件，无法创建文件夹";
-                    }));
-                }
-                else
-                {
-                    File_Create_Form.file_Create_Form.create_description_label.Invoke(new MethodInvoker(delegate ()
-                    {
-                        File_Create_Form.file_Create_Form.create_description_label.Visible = false;
-                    }));
-                    File_Create_Form.file_Create_Form.Invoke(new MethodInvoker(delegate () { File_Create_Form.file_Create_Form.Close(); }));
-                    // 创建成功刷新文件夹,从头开始刷新
-                    UserModel userModel = new UserModel();
-                    userModel.setRefreshFile("true");
-                    userModel.setUserName(Main_Form.main_Form.commonRes.getUserName());
-                    userModel.setFileName(Main_Form.main_Form.commonRes.getUserName());
-                    userModel.setFilePath(Main_Form.main_Form.commonRes.getUserName());
-                    userModel.setCurrentPage(1);
-                    userModel.setPageSize(10);
-                    NetServiceContext.sendMessageNotWaiting(6, JsonConvert.SerializeObject(userModel), obj);
-                }
-            }
-            else if (frameType == (byte)8) // 个人网盘文件夹名称修改
-            {
-                File_Create_Form.file_Create_Form.create_description_label.Invoke(new MethodInvoker(delegate ()
-                {
-                    File_Create_Form.file_Create_Form.create_description_label.Visible = false;
-                }));
-                File_Create_Form.file_Create_Form.Invoke(new MethodInvoker(delegate () { File_Create_Form.file_Create_Form.Close(); }));
-
-                FileDto fileDto = (FileDto)netResponse.getCommonRes();
-                Main_Form.main_Form.personal_file_treeView.Invoke(new MethodInvoker(delegate ()
-                {
-                    // 根据当前节点fileDto判断处于文件夹树中哪一个节点下,追加相应节点
-                    appendFileNode(fileDto);
-                    Main_Form.main_Form.personal_file_treeView.ExpandAll();
-                }));
-            }
-            else if (frameType == (byte)11)
-            {
-                List<long> list = (List<long>)netResponse.getCommonRes();
-                Main_Form.main_Form.file_list_dataGridView.Invoke(new MethodInvoker(delegate ()
-                {
-                    int count = Main_Form.main_Form.file_list_dataGridView.Rows.Count;
-                    if (count > 0)
-                    {
-                        // 循环遍历删除行记录
-                        for (int i = 0; i < list.Count; i++)
-                        {
-                            for (int j = (count - 1); j >= 0; j--)
-                            {
-                                string tag = Main_Form.main_Form.file_list_dataGridView.Rows[j].Cells[9].Value.ToString();
-                                if (tag == list[i].ToString())
-                                {
-                                    Main_Form.main_Form.file_list_dataGridView.Rows.RemoveAt(j);
-                                    count = Main_Form.main_Form.file_list_dataGridView.Rows.Count;
-                                }
-                            }
-                        }
-                    }
-
-                }));
-
-                // 恢复button的权限
-                Main_Form.main_Form.all_select_button.Invoke(new MethodInvoker(delegate ()
-                {
-                    Main_Form.main_Form.all_select_button.Enabled = true;
-                }));
-
-                Main_Form.main_Form.all_cancel_select_button.Invoke(new MethodInvoker(delegate ()
-                {
-                    Main_Form.main_Form.all_cancel_select_button.Enabled = true;
-                }));
-
-                Main_Form.main_Form.all_select_download_button.Invoke(new MethodInvoker(delegate ()
-                {
-                    Main_Form.main_Form.all_select_download_button.Enabled = true;
-                }));
-
-                Main_Form.main_Form.all_select_delete_button.Invoke(new MethodInvoker(delegate ()
-                {
-                    Main_Form.main_Form.all_select_delete_button.Enabled = true;
-                }));
-
-                Main_Form.main_Form.all_file_refresh_button.Invoke(new MethodInvoker(delegate ()
-                {
-                    Main_Form.main_Form.all_file_refresh_button.Enabled = true;
-                }));
-            }
-            else if (frameType == (byte)12)
-            {
-                List<UserModel> list = (List<UserModel>)netResponse.getCommonRes();
-                Main_Form.main_Form.user_list_dataGridView.Invoke(new MethodInvoker(delegate ()
-                {
-                    Main_Form.main_Form.user_list_dataGridView.Rows.Clear();
-                    for (int i = 0; i < list.Count; i++)
-                    {
-                        Main_Form.main_Form.user_list_dataGridView.Rows.Add();
-                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[0].Value = i + 1;
-                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[1].Value = list[i].getUserName();
-                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[2].Value = Utils.ToDateTime(list[i].getLastLoginDate());
-                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[3].Value = Utils.ToDateTime(list[i].getRegisterDate());
-                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[4].Value = (list[i].getStatus() == "1" ? "在线" : "未知状态");
-                    }
-                }));
-            }
-        }
 
         // 处理当前文件夹下的子文件夹
         public static void appendFileNode(FileDto fileDto)

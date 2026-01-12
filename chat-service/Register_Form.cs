@@ -48,7 +48,6 @@ namespace chat_service
         public Register_Form()
         {
             InitializeComponent();
-
             register_Form = this;
         }
         
@@ -92,7 +91,7 @@ namespace chat_service
 
         // --> *********************************************** 委托调用 ********************************************
 
-        // 注册代理调用
+        // 注册结果委托代理调用，当发送注册命令后服务端处理完成返回时调用
         public static void registerDelegateHandler(object obj, NetResponse netResponse)
         {
             Login_Register_Form login_Register_Form = (Login_Register_Form)obj;
