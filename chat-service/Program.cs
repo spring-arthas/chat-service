@@ -28,22 +28,24 @@ namespace chat_service
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             
-            // 加载配置文件
+            // 1. 加载配置文件
             loadNetClient();
 
-            // 实例化登录窗口
+            // 2. 实例化登录窗口, 即应用启动的主窗口
             login_Register_Form = new Login_Register_Form();
 
             // 委托建立连接
             delegateCreateConnection();
 
-            // 开启登录窗口
+            // 3. 开启登录窗口
             Application.Run(login_Register_Form);
 
             //Application.Run(new Test());
 
         }
-
+        /// <summary>
+        /// 加载配置文件
+        /// </summary>
         private static void loadNetClient()
         {
             // 加载配置文件
@@ -66,20 +68,29 @@ namespace chat_service
             NetServiceContext.globalDownloadPath = XmlConfigUtils.GetValue("globalDownloadPath");
         }
 
+        /// <summary>
+        /// 委托代理执行客户端连接创建，只需要一个构建一个socket连接即可，用于文本传输场景，对于文件类型操作会重新新建连接进行处理
+        /// </summary>
         public static void delegateCreateConnection()
         {
+            // 构建委托delegete对象，其中入参就是代理需要执行的逻辑
             rc = new RemoteConntect(beginRemoteConnect);
             AsyncCallback callback = new AsyncCallback(AsyncCallbackImpl);
+            // rc代理对象执行异步代理逻辑，处理结果通过AsyncCallback异步进行结果回调
             rc.BeginInvoke(callback, null);
         }
 
-        // 建立连接(只建立聊天连接)
+        /// <summary>
+        /// 建立连接
+        /// </summary>
         private static NetResponse beginRemoteConnect()
         {
             return NetServiceContext.chatInitSocketAndConnect();
         }
 
-        // 异步回调结果
+        /// <summary>
+        /// 异步回调结果
+        /// </summary>
         private static void AsyncCallbackImpl(IAsyncResult ar)
         {
             // 获取建立连接结果
@@ -89,19 +100,15 @@ namespace chat_service
                 
                 if (netResponse.getResponse().Equals(NetResponse.Response.CONNECTION_SUCCESS))
                 {
-
-                    // 设置用户名
+                    // 设置用户名用于下次登录默认代入
                     login_Register_Form.userName_textBox.Invoke(new MethodInvoker(delegate () { login_Register_Form.userName_textBox.Text = XmlConfigUtils.GetValue("userName");}));
-                    
-                    // 设置密码
-                    login_Register_Form.password_textBox.Invoke(new MethodInvoker(delegate () { login_Register_Form.password_textBox.Text = XmlConfigUtils.GetValue("password");}));
-
-                    // 设置连接信息
+                    // 设置密码用于下次登录默认代入
+                    login_Register_Form.password_textBox.Invoke(new MethodInvoker(delegate () { login_Register_Form.password_textBox.Text = XmlConfigUtils.GetValue("password");}))
+                    // 设置连接信息，即socket连接结果信息
                     login_Register_Form.connect_label.Invoke(new MethodInvoker(delegate () { login_Register_Form.connect_label.Visible = true; login_Register_Form.connect_label.ForeColor = Color.Green; login_Register_Form.connect_label.Text = netResponse.getResult();}));
-
-                    // 异步线程开始监听数据
+                    // 异步线程开始监听服务端回传数据，无限循环读取数据
                     receiveThread = new Thread(threadLoop);
-                    receiveThread.IsBackground = true;
+                    receiveThread.IsBackground = true; // 设置为后台程序
                     receiveThread.Start();
                 }
                 else
@@ -122,7 +129,7 @@ namespace chat_service
         // 初始化线程
         private static void threadLoop()
         {
-            NetServiceContext.loopReceiveServiceData(login_Register_Form);
+            NetServiceContext.receiveResponse(login_Register_Form);
         }
     }
 }

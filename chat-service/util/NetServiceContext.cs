@@ -14,10 +14,29 @@ using System.Windows.Forms;
 using chat_service.service.file;
 using chat_service.file;
 
+using Newtonsoft.Json.Linq;
+
 namespace chat_service.util
 {
     public class NetServiceContext
     {
+        private static readonly byte[] MAGIC = { 0xFA, 0xCE };
+        private const int HEADER_LENGTH = 8;
+        // 用户帧类型
+        public const byte USER_REGISTER_REQ = 0x30;
+        public const byte USER_LOGIN_REQ = 0x31;
+        public const byte USER_CHANGE_PWD_REQ = 0x32;
+        public const byte USER_LOGOUT_REQ = 0x33;
+        public const byte USER_RESPONSE = 0x34;
+        // 文件帧类型
+        public const byte DIR_CREATE_REQ = 0x10;
+        public const byte  DIR_DELETE_REQ = 0x11;
+        public const byte  DIR_UPDATE_REQ = 0x12;
+        public const byte DIR_MOVE_REQ = 0x13;
+        public const byte DIR_RESPONSE = 0x14;
+
+
+
         // 远程服务地址
         public static string remoteServiceAddress = "", remoteFileServiceAddress = "", remoteFileDownloadServiceAddress = "";
         // 下载路径
@@ -38,14 +57,13 @@ namespace chat_service.util
         public static Socket socket = null;
         // 文件服务地址
         public static string[] address = null;
-        // 当前处理中的FrameModel
-        private static FrameModel currentFrameModel = new FrameModel("1", 0);
         // socket建立事件
         private static ManualResetEvent connectDone = new ManualResetEvent(false);
         // socket接收事件
         private static ManualResetEvent sendDone = new ManualResetEvent(false);
         // socket接收事件
         private static ManualResetEvent receiveDone = new ManualResetEvent(false);
+
 
         // 建立聊天连接
         public static NetResponse chatInitSocketAndConnect()
@@ -54,7 +72,6 @@ namespace chat_service.util
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.Linger, 10);
             string[] address = remoteServiceAddress.Split(':');
-
             // 获取连接地址
             remoteIp = IPAddress.Parse(address[0]);
             remotePort = Convert.ToInt32(address[1]);
@@ -79,6 +96,26 @@ namespace chat_service.util
 
                 return NetResponse.ofConnectFail("尝试与服务端连接异常, 请尝试重连或重新设置, [" + (remoteIp.ToString() + ":" + remotePort) + "]");
             }
+        }
+
+        /// <summary>
+        /// 客户端登录
+        /// </summary>
+        public static void login(string userName, string password)
+        {
+            JObject request = new JObject();
+            request["userName"] = userName;
+            request["password"] = password;
+            sendFrame(USER_LOGIN_REQ, request.ToString(Formatting.None));
+            Console.WriteLine("发送登录请求: " + request.ToString(Formatting.None));
+        }
+        /// <summary>
+        /// 客户端注册
+        /// </summary>
+        public static void register(JObject request)
+        {
+            sendFrame(USER_LOGIN_REQ, request.ToString(Formatting.None));
+            Console.WriteLine("发送注册请求: " + request.ToString(Formatting.None));
         }
 
         // 聊天连接回调
@@ -173,6 +210,265 @@ namespace chat_service.util
             }
 
         }
+
+
+
+
+
+
+
+
+
+
+
+        private static void sendFrame(byte frameType, string jsonData)
+        {
+            byte[] data = Encoding.UTF8.GetBytes(jsonData);
+            byte[] buffer = new byte[HEADER_LENGTH + data.Length];
+
+            buffer[0] = MAGIC[0];
+            buffer[1] = MAGIC[1];
+            buffer[2] = frameType;
+            buffer[3] = 0; // flags
+
+            // buffer.putInt(data.length); (Big Endian in Java)
+            byte[] lenBytes = BitConverter.GetBytes(data.Length);
+            if (BitConverter.IsLittleEndian)
+            {
+                Array.Reverse(lenBytes);
+            }
+            Array.Copy(lenBytes, 0, buffer, 4, 4);
+
+            Array.Copy(data, 0, buffer, 8, data.Length);
+
+            int sent = 0;
+            while (sent < buffer.Length)
+            {
+                sent += socket.Send(buffer, sent, buffer.Length - sent, SocketFlags.None);
+            }
+        }
+
+        public class NetFrame
+        {
+            public byte FrameType { get; set; }
+            public byte[] Data { get; set; }
+        }
+
+        // Deprecated readNextFrame removed as logic is inlined into receiveResponse
+        
+        // Main receiving loop
+        public static void receiveResponse(object obj)
+        {
+            while (true)
+            {
+                // 1. Connection Check & Reconnect
+                if (socket == null || !socket.Connected)
+                {
+                    try
+                    {
+                        // Update UI: Reconnecting
+                        updateConnectionStatus(obj, "正在尝试重连服务器...", Color.Red);
+
+                        if (socket != null)
+                        {
+                            try { socket.Close(); } catch { }
+                            socket = null;
+                        }
+
+                        // Parse address again or use cached
+                        string[] address = remoteServiceAddress.Split(':');
+                        IPAddress ip = IPAddress.Parse(address[0]);
+                        int port = Convert.ToInt32(address[1]);
+                        IPEndPoint remoteEP = new IPEndPoint(ip, port);
+
+                        socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                        socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.Linger, 10);
+
+                        // Synchronous connect
+                        socket.Connect(remoteEP);
+
+                        if (socket.Connected)
+                        {
+                            updateConnectionStatus(obj, "网络连接正常......", Color.Green);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        // Connect failed, wait and retry
+                        Thread.Sleep(3000);
+                        continue;
+                    }
+                }
+
+                try
+                {
+                    // 2. Read Header (8 bytes)
+                    byte[] header = new byte[HEADER_LENGTH];
+                    int totalHeaderReceived = 0;
+                    while (totalHeaderReceived < HEADER_LENGTH)
+                    {
+                        int received = socket.Receive(header, totalHeaderReceived, HEADER_LENGTH - totalHeaderReceived, SocketFlags.None);
+                        if (received == 0)
+                        {
+                            throw new SocketException((int)SocketError.ConnectionReset);
+                        }
+                        totalHeaderReceived += received;
+                    }
+
+                    // 3. Validate Magic
+                    if (header[0] != MAGIC[0] || header[1] != MAGIC[1])
+                    {
+                        throw new Exception("无效的协议头 (Magic Mismatch)");
+                    }
+
+                    // 4. Get Frame Type
+                    byte frameType = header[2];
+
+                    // 5. Parse Length
+                    byte[] lenBytes = new byte[4];
+                    Array.Copy(header, 4, lenBytes, 0, 4);
+                    if (BitConverter.IsLittleEndian)
+                    {
+                         Array.Reverse(lenBytes);
+                    }
+                    int dataLength = BitConverter.ToInt32(lenBytes, 0);
+
+                    // Sanity check
+                    if (dataLength < 0 || dataLength > 50 * 1024 * 1024)
+                    {
+                         throw new Exception($"非法的数据长度: {dataLength}");
+                    }
+
+                    // 6. Read Data
+                    byte[] data = new byte[dataLength];
+                    int totalDataReceived = 0;
+                    while (totalDataReceived < dataLength)
+                    {
+                         int received = socket.Receive(data, totalDataReceived, dataLength - totalDataReceived, SocketFlags.None);
+                         if (received == 0)
+                         {
+                             throw new SocketException((int)SocketError.ConnectionReset);
+                         }
+                         totalDataReceived += received;
+                    }
+
+                    // 7. Dispatch
+                    string json = Encoding.UTF8.GetString(data);
+                    
+                    try 
+                    {
+                        // Use Invoke if needed for simple handlers, but dataHandler usually handles Invoke internaly
+                        if (frameType == USER_RESPONSE)
+                        {
+                             CommonRes commonRes = JsonConvert.DeserializeObject<CommonRes>(json);
+                             dataHandler(frameType, NetResponse.of(NetResponse.Response.SUCCESS, commonRes, commonRes.getMessage(), ""), obj);
+                        }
+                        else if (frameType == DIR_RESPONSE)
+                        {
+                             FileDto fileDto = JsonConvert.DeserializeObject<FileDto>(json);
+                             dataHandler(frameType, NetResponse.of(NetResponse.Response.SUCCESS, fileDto, "Success", ""), obj);
+                        }
+                        else if (frameType == (byte)3 || frameType == (byte)12)
+                        {
+                             List<UserModel> userModels = JsonConvert.DeserializeObject<List<UserModel>>(json);
+                             dataHandler(frameType, NetResponse.of(NetResponse.Response.SUCCESS, userModels, "Success", ""), obj);
+                        }
+                        else if (frameType == 6 || frameType == 7 || frameType == 8)
+                        {
+                             FileDto fileDto = JsonConvert.DeserializeObject<FileDto>(json);
+                             dataHandler(frameType, NetResponse.of(NetResponse.Response.SUCCESS, fileDto, "Success", ""), obj);
+                        }
+                        else if (frameType == 11)
+                        {
+                             List<long> fileIdList = JsonConvert.DeserializeObject<List<long>>(json);
+                             dataHandler(frameType, NetResponse.of(NetResponse.Response.SUCCESS, fileIdList, "Success", ""), obj);
+                        }
+                        else
+                        {
+                             CommonRes commonRes = JsonConvert.DeserializeObject<CommonRes>(json);
+                             dataHandler(frameType, NetResponse.of(NetResponse.Response.SUCCESS, commonRes, commonRes.getMessage(), ""), obj);
+                        }
+                    }
+                    catch(Exception ex) 
+                    {
+                         Console.WriteLine("Data Handler Logic Error: " + ex.Message);
+                    }
+
+                }
+                catch (Exception)
+                {
+                    // Socket error or logic error, close socket to trigger reconnect
+                    try { if (socket != null) socket.Close(); } catch { }
+                    // Update UI immediately
+                    updateConnectionStatus(obj, "连接异常，正在重连...", Color.Red);
+                }
+            }
+        }
+
+        private static void updateConnectionStatus(object obj, string msg, Color color)
+        {
+            if (Main_Form.main_Form != null && !Main_Form.main_Form.IsDisposed)
+            {
+                Main_Form.main_Form.result_label.Invoke(new MethodInvoker(delegate ()
+                {
+                    Main_Form.main_Form.result_label.Text = msg;
+                    Main_Form.main_Form.result_label.ForeColor = color;
+                }));
+            }
+            else if (obj is Login_Register_Form loginForm && !loginForm.IsDisposed)
+            {
+                loginForm.connect_label.Invoke(new MethodInvoker(delegate ()
+                {
+                    loginForm.connect_label.Text = msg;
+                    loginForm.connect_label.ForeColor = color;
+                }));
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -435,310 +731,8 @@ namespace chat_service.util
 
 
 
-        // 数据接收  Array.Clear(bytes, 0, bytes.Length);
-        public static void loopReceiveServiceData(object obj)
-        {
-            // Begin receiving the data from the remote device.     
-            if (socket.Connected)
-            {
-                byte[] receiveBuffer = new byte[bufferSize];
-                StringBuilder stringBuilder = new StringBuilder("");
 
-                while (true)
-                {
-                    try
-                    {
-                        //开始接收信息
-                        int readByteLength = socket.Receive(receiveBuffer);
-                        if (readByteLength == 0)
-                        {
-                            Thread.Sleep(10);
-                            continue;
-                        }
-                        if (readByteLength == -1)
-                        {
-                            socket.Close();
-                            break;
-                        }
 
-                        // 不足基本帧数据，则不处理只缓存
-                        if (readByteLength < 10) // 长度不为8，即连基本帧信息数据都不够，则不进行解析
-                        {
-                            continue;
-                        }
-
-                        if (currentFrameModel.getStatus() == "1") // 从未处理，执行首次处理
-                        {
-                            parseBytes(readByteLength, receiveBuffer, obj);
-                            // 如果刚好字节读取完成则直接处理
-                            if (currentFrameModel.getStatus() == "3")
-                            {
-                                receiveHandler(currentFrameModel, obj);
-                                resetFrameModelAll();
-                            }
-                        }
-                        else if (currentFrameModel.getStatus() == "2") // 处理中
-                        {
-                            int index = currentFrameModel.getIndex();
-                            // 获取剩余需要从receiveBuffer中读取的字节数
-                            int appendBytesCount = currentFrameModel.getOriginDataBytesLength() - currentFrameModel.getOrigiDataBytes().Length;
-                            // 如果当前接收的字节数据长度大于完整帧剩余需要的字节数，则重新构建原始字节数组,并缓存剩余字节数组
-                            if (readByteLength >= appendBytesCount)
-                            {
-                                // 1、读取并设置剩余字节数组
-                                byte[] appendBytes = new byte[appendBytesCount];
-                                Buffer.BlockCopy(receiveBuffer, 0, appendBytes, 0, appendBytesCount);
-
-                                // 2、将剩余字节数组以及原有的字节数组拼接变为新数组
-                                byte[] perfectOriginBytes = new byte[appendBytes.Length + currentFrameModel.getOrigiDataBytes().Length];
-                                Buffer.BlockCopy(currentFrameModel.getOrigiDataBytes(), 0, perfectOriginBytes, 0, currentFrameModel.getOrigiDataBytes().Length);
-                                Buffer.BlockCopy(appendBytes, 0, perfectOriginBytes, currentFrameModel.getOrigiDataBytes().Length, appendBytes.Length);
-                                currentFrameModel.setOrigiDataBytes(perfectOriginBytes);
-                                currentFrameModel.setStatus("3");
-
-                                // 3、执行业务处理
-                                receiveHandler(currentFrameModel, obj);
-
-                                if (readByteLength > appendBytes.Length)
-                                {
-                                    // 4、处理当前receiveBuffer中剩余字节数组,进入缓存
-                                    resetFrameModelBasic();
-                                    byte[] restBytes = new byte[receiveBuffer.Length - appendBytesCount];
-                                    Buffer.BlockCopy(receiveBuffer, appendBytesCount, restBytes, 0, restBytes.Length);
-                                    currentFrameModel.setRestBytes(restBytes);
-                                    currentFrameModel.setStatus("4");
-                                    if (restBytes.Length > 10)
-                                    {
-                                        // 尝试解析剩余字节
-                                        parseBytes(restBytes.Length, restBytes, obj);
-                                    }
-                                }
-                                else
-                                {
-                                    resetFrameModelAll();
-                                }
-                            }
-                            else
-                            {
-                                // 1、不够则继续缓存，重新构建缓存字节数组,读取并设置剩余字节数组
-                                byte[] appendBytes = new byte[receiveBuffer.Length];
-                                Buffer.BlockCopy(receiveBuffer, 0, appendBytes, 0, receiveBuffer.Length);
-
-                                // 2、将追加的字节数组以及原有的字节数组拼接变为新数组
-                                byte[] perfectOriginBytes = new byte[appendBytes.Length + currentFrameModel.getOrigiDataBytes().Length];
-                                Buffer.BlockCopy(currentFrameModel.getOrigiDataBytes(), 0, perfectOriginBytes, 0, currentFrameModel.getOrigiDataBytes().Length);
-                                Buffer.BlockCopy(appendBytes, 0, perfectOriginBytes, currentFrameModel.getOrigiDataBytes().Length, appendBytes.Length);
-                                currentFrameModel.setOrigiDataBytes(perfectOriginBytes);
-                                currentFrameModel.setStatus("2");
-                            }
-
-                        }
-                        else if (currentFrameModel.getStatus() == "4") // 存在剩余，此时status必须为4，且restBytes不为空，其他都为初始值
-                        {
-                            // 将当前缓存数组restBytes和新接收的数组receiveBuffer数组合并
-                            byte[] sumBytes = new byte[currentFrameModel.getRestBytes().Length + receiveBuffer.Length];
-                            // 拷贝缓存字节数组
-                            Buffer.BlockCopy(currentFrameModel.getRestBytes(), 0, sumBytes, 0, currentFrameModel.getRestBytes().Length);
-                            // 拷贝新接收的字节数组
-                            Buffer.BlockCopy(receiveBuffer, 0, sumBytes, currentFrameModel.getRestBytes().Length, receiveBuffer.Length);
-                            parseBytes(readByteLength, sumBytes, obj);
-                        }
-
-                        Array.Clear(receiveBuffer, 0, receiveBuffer.Length);
-                    }
-                    //catch (ThreadAbortException e)
-                    //{
-                    //    // 重置线程状态为Abort
-                    //    Thread.ResetAbort();
-                    //}
-                    catch (SocketException e)
-                    {
-                        // 判断socket连接状态，如果是非连接，则直接终止接收线程
-                        try
-                        {
-                            isSocketConnected(socket);
-                            // 处于连接
-                        }
-                        catch (SocketException ex)
-                        {
-                            // 代码 10035也保证socket连接状态正常
-                            if (ex.NativeErrorCode.Equals(10035))
-                            {
-                                continue;
-                            }
-
-                            // 否则直接结束当前socket接收数据线程
-                            return;
-                        }
-
-                    }
-                    catch (Exception e)
-                    {
-                        if (e is SocketException)
-                        {
-                            // 设置主窗体连接状态
-                            if (null != Main_Form.main_Form)
-                            {
-                                Main_Form.main_Form.result_label.Invoke(new MethodInvoker(delegate ()
-                                {
-                                    Main_Form.main_Form.result_label.Text = "连接中......";
-                                }));
-                            }
-
-                            // 设置登录窗体连接状态
-                            Login_Register_Form login_Register_Form = (Login_Register_Form)obj;
-                            login_Register_Form.connect_label.Invoke(new MethodInvoker(delegate ()
-                            {
-                                login_Register_Form.connect_label.Text = "连接中......";
-                            }));
-                        }
-
-                        resetFrameModelAll();
-                    }
-                }
-            }
-            else
-            {
-                MessageBox.Show("客户端与服务端socket连接状态异常，请尝试关闭应用后重启");
-            }
-        }
-
-        // 解析数据
-        public static void parseBytes(int readByteLength, byte[] receiveBuffer, object obj)
-        {
-            // 解析字节总长度4B
-            if (currentFrameModel.getSumLength() == 0)
-            {
-                int index = currentFrameModel.getIndex();
-                int value = (int)((receiveBuffer[index] & 0xFF)
-                    | ((receiveBuffer[index + 1] & 0xFF) << 8)
-                    | ((receiveBuffer[index + 2] & 0xFF) << 16)
-                    | ((receiveBuffer[index + 3] & 0xFF) << 24));
-
-                currentFrameModel.setSumLength(IPAddress.NetworkToHostOrder(value) - 4);
-                currentFrameModel.setIndex(index + 4);
-            }
-
-            // 解析帧类型 1B
-            if (currentFrameModel.getFrameType() == (byte)0)
-            {
-                currentFrameModel.setFrameType(receiveBuffer[currentFrameModel.getIndex()]);
-                currentFrameModel.setIndex(currentFrameModel.getIndex() + 1);
-            }
-
-            // 解析是否为结尾帧 1B
-            if (currentFrameModel.getEndFrame() == (byte)0)
-            {
-                currentFrameModel.setEndFrame(receiveBuffer[currentFrameModel.getIndex()]);
-                currentFrameModel.setIndex(currentFrameModel.getIndex() + 1);
-            }
-
-            // 解析实际数据内容长度 4B
-            if (currentFrameModel.getOriginDataBytesLength() == (short)0)
-            {
-                int index = currentFrameModel.getIndex();
-                int value = (int)((receiveBuffer[index] & 0xFF)
-                    | ((receiveBuffer[index + 1] & 0xFF) << 8)
-                    | ((receiveBuffer[index + 2] & 0xFF) << 16)
-                    | ((receiveBuffer[index + 3] & 0xFF) << 24));
-                currentFrameModel.setOriginDataBytesLength(IPAddress.NetworkToHostOrder(value));
-                currentFrameModel.setIndex(index + 4);
-            }
-
-            // 解析数据
-            if (currentFrameModel.getOrigiDataBytes() == null)
-            {
-                int index = currentFrameModel.getIndex();
-                
-                // 如果真实字节数据长度刚好全部存储与receiveBuffer中，即解析完成，则设置其状态
-                if ((readByteLength - 10) == currentFrameModel.getOriginDataBytesLength())
-                {
-                    byte[] dataBytes = new byte[currentFrameModel.getOriginDataBytesLength()];
-                    Buffer.BlockCopy(receiveBuffer, index, dataBytes, 0, currentFrameModel.getOriginDataBytesLength());
-                    currentFrameModel.setOrigiDataBytes(dataBytes);
-
-                    currentFrameModel.setIndex(0);
-                    currentFrameModel.setStatus("3"); // 处理完成
-                }
-                else if ((readByteLength - 10) > currentFrameModel.getOriginDataBytesLength()) // 大于真实字节数据长度，则发生了半包,存在剩余字节
-                {
-                    // 处理正常数据
-                    byte[] dataBytes = new byte[currentFrameModel.getOriginDataBytesLength()];
-                    Buffer.BlockCopy(receiveBuffer, index, dataBytes, 0, currentFrameModel.getOriginDataBytesLength());
-                    currentFrameModel.setOrigiDataBytes(dataBytes);
-                    currentFrameModel.setStatus("3");
-
-                    // 执行业务处理
-                    receiveHandler(currentFrameModel, obj);
-
-                    // 处理剩余部分字节
-                    resetFrameModelBasic();
-                    byte[] restBytes = new byte[receiveBuffer.Length - (10 + currentFrameModel.getOrigiDataBytes().Length)];
-                    Buffer.BlockCopy(receiveBuffer, (10 + currentFrameModel.getOrigiDataBytes().Length), restBytes, 0, restBytes.Length);
-                    currentFrameModel.setIndex(0);
-                    currentFrameModel.setStatus("4"); // 存在剩余
-                    currentFrameModel.setRestBytes(restBytes); // 记录剩余字节
-                    if (restBytes.Length > 10)
-                    {
-                        // 尝试解析剩余字节
-                        parseBytes(restBytes.Length, restBytes, obj);
-                    }
-                }
-                else if ((readByteLength - 10) < currentFrameModel.getOriginDataBytesLength()) // 小于真实字节数据长度，不能进行处理，等待下次继续接收
-                {
-                    // 处理正常数据
-                    byte[] dataBytes = new byte[readByteLength - 10];
-                    Buffer.BlockCopy(receiveBuffer, index, dataBytes, 0, readByteLength - 10);
-                    currentFrameModel.setOrigiDataBytes(dataBytes);
-
-                    currentFrameModel.setIndex(0);
-                    currentFrameModel.setStatus("2"); // 处理中
-                }
-            }
-        }
-
-        // 字节数据处理
-        private static void receiveHandler(FrameModel perfectFrameModel, object obj)
-        {
-            if (!(perfectFrameModel.getStatus() == "3"))
-            {
-                return;
-            }
-
-            StringBuilder stringBuilder = new StringBuilder("");
-            stringBuilder.Append(Encoding.UTF8.GetString(perfectFrameModel.getOrigiDataBytes(), 0, perfectFrameModel.getOriginDataBytesLength())); // 获取帧数据
-            perfectFrameModel.setData(stringBuilder.ToString());
-
-            // 刷新用户列表帧或搜索用户帧，返回为数组json
-            if (perfectFrameModel.getFrameType() == (byte)3 || perfectFrameModel.getFrameType() == (byte) 12)
-            {
-                List<UserModel> userModels = (List<UserModel>)JsonConvert.DeserializeObject(perfectFrameModel.getData(), typeof(List<UserModel>));
-                dataHandler(perfectFrameModel.getFrameType(), NetResponse.of(NetResponse.Response.SUCCESS, userModels, "Success", ""), obj);
-                return;
-            }
-
-            // 个人网盘帧文件夹操作
-            if ((perfectFrameModel.getFrameType() == (byte)6) 
-                || (perfectFrameModel.getFrameType() == (byte)7)
-                || (perfectFrameModel.getFrameType() == (byte)8))
-            {
-                FileDto fileDto = JsonConvert.DeserializeObject<FileDto>(perfectFrameModel.getData());
-                dataHandler(perfectFrameModel.getFrameType(), NetResponse.of(NetResponse.Response.SUCCESS, fileDto, "Success", ""), obj);
-                return;
-            }
-
-            // 个人网盘文件删除操作
-            if (perfectFrameModel.getFrameType() == (byte)11)
-            {
-                List<long> fileIdList = (List<long>)JsonConvert.DeserializeObject(perfectFrameModel.getData(), typeof(List<long>));
-                dataHandler(perfectFrameModel.getFrameType(), NetResponse.of(NetResponse.Response.SUCCESS, fileIdList, "Success", ""), obj);
-                return;
-            }
-
-            // 转换数据并追加；
-            CommonRes commonRes = (CommonRes)JsonConvert.DeserializeObject(perfectFrameModel.getData(), typeof(CommonRes));
-            dataHandler(perfectFrameModel.getFrameType(), NetResponse.of(NetResponse.Response.SUCCESS, commonRes, commonRes.getMessage(), ""), obj);
-        }
 
         // 业务数据处理
         public static void dataHandler(byte frameType, NetResponse netResponse, object obj)
@@ -785,6 +779,13 @@ namespace chat_service.util
             {
                 Register_Form.registerDelegateHandler(obj, netResponse);
             }
+            else if (frameType == USER_RESPONSE) // 0x34
+            {
+                // Fallback attempt: check content or just treat as logic success.
+                // Assuming it routes to Login or generic handler.
+                // If it's Login Response:
+                Login_Register_Form.loginDelegateHandler(obj, netResponse);
+            }
             else if (frameType == (byte)5) // 5: 心跳帧响应
             {
                 Main_Form.main_Form.result_label.Invoke(new MethodInvoker(delegate ()
@@ -795,13 +796,14 @@ namespace chat_service.util
                     }
                 }));
             }
-            else if (frameType == (byte)6) // 6: 个人网盘文件夹刷新
+            else if (frameType == (byte)6 || frameType == DIR_RESPONSE) // 6: 个人网盘文件夹刷新 OR DIR_RESPONSE (if they share structure)
             {
                 FileDto fileDto = (FileDto)netResponse.getCommonRes();
                 // 设置当前文件夹下的文件数量
                 Main_Form.main_Form.file_sum_count_label.Invoke(new MethodInvoker(delegate ()
                 {
-                    Main_Form.main_Form.file_sum_count_label.Text = fileDto.getFileCount().ToString();
+                    if (fileDto != null)
+                        Main_Form.main_Form.file_sum_count_label.Text = fileDto.getFileCount().ToString();
                 }));
 
                 Main_Form.main_Form.personal_file_treeView.Invoke(new MethodInvoker(delegate ()
@@ -1092,30 +1094,7 @@ namespace chat_service.util
             }
         }
 
-        public static void resetFrameModelBasic()
-        {
-            currentFrameModel.setSumLength(0);
-            currentFrameModel.setFrameType((byte)0);
-            currentFrameModel.setEndFrame((byte)0);
-            currentFrameModel.setIndex(0);
-            currentFrameModel.setOriginDataBytesLength(0);
-            currentFrameModel.setOrigiDataBytes(null);
-            currentFrameModel.setData("");
-            currentFrameModel.setStatus("1");
-        }
 
-        public static void resetFrameModelAll()
-        {
-            currentFrameModel.setSumLength(0);
-            currentFrameModel.setFrameType((byte)0);
-            currentFrameModel.setEndFrame((byte)0);
-            currentFrameModel.setIndex(0);
-            currentFrameModel.setOriginDataBytesLength(0);
-            currentFrameModel.setOrigiDataBytes(null);
-            currentFrameModel.setData("");
-            currentFrameModel.setRestBytes(null);
-            currentFrameModel.setStatus("1");
-        }
 
         // 判断socket连接状态(发送0字节判断socket连接状态)
         public static bool isSocketConnected(Socket socket)
@@ -1163,5 +1142,6 @@ namespace chat_service.util
                 socket.Close();
             }
         }
+
     }
 }

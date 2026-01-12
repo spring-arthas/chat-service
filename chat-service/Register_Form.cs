@@ -87,7 +87,7 @@ namespace chat_service
             password = password_textBox.Text;
             userModel.setPhone(phone_textBox.Text);
             userModel.setMail(mail_textBox.Text);
-            NetServiceContext.sendMessageNotWaiting(4, JsonConvert.SerializeObject(userModel), this);
+            NetServiceContext.register(JsonConvert.SerializeObject(userModel));
         }
 
         // --> *********************************************** 委托调用 ********************************************

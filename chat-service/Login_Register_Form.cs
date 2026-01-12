@@ -72,7 +72,7 @@ namespace chat_service
             regiterFrom.ShowDialog();
         }
 
-        // 设置IP地址
+        // 设置IP地址，用于切换新的服务端地址进行连接
         private void setting_label_Click(object sender, EventArgs e)
         {
             Setting_Form setting_Form = new Setting_Form();
@@ -142,7 +142,7 @@ namespace chat_service
             UserModel userModel = new UserModel();
             userModel.setUserName(userName_textBox.Text);
             userModel.setPassword(password_textBox.Text);
-            NetServiceContext.sendMessageNotWaiting(0, JsonConvert.SerializeObject(userModel), this);
+            NetServiceContext.login(userModel.getUserName(), userModel.getPassword());
         }
 
         // 登录窗体关闭，发送关闭socket消息
