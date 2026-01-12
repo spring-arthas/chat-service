@@ -13,7 +13,7 @@ namespace chat_service.util
         private static XmlDocument doc = new XmlDocument();
         private static string xmlFilePath = "";
 
-        // 初始化Doc
+        // 初始化客户端配置，文件来源于项目根目录下的client.xml文件
         public static void InitDoc()
         {
             xmlFilePath = AppDomain.CurrentDomain.BaseDirectory.ToString() + "client.xml";

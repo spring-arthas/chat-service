@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+    <appSettings>
+        <add key="remoteServiceAddress" value="172.21.32.104:10086">
+        </add>
+        <add key="remoteFileServiceAddress" value="172.21.32.104:10087">
+        </add>
+        <add key="remoteFileDownloadServiceAddress" value="172.21.32.104:10088">
+        </add>
+        <add key="userName" value="spring">
+        </add>
+        <add key="password" value="1">
+        </add>
+        <add key="socketSendBufferSize" value="32500">
+        </add>
+        <add key="socketReceiveBufferSize" value="32500">
+        </add>
+        <add key="bufferSize" value="32500">
+        </add>
+        <add key="fileOperateSize" value="65400">
+        </add>
+        <add key="globalDownloadPath" value="D:\\download\\">
+        </add>
+    </appSettings>
+</configuration>
