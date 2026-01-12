@@ -48,7 +48,6 @@ namespace chat_service
         public Register_Form()
         {
             InitializeComponent();
-
             register_Form = this;
         }
         
