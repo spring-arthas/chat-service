@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
+using Newtonsoft.Json.Linq;
 using System.Windows.Forms;
 using chat_service.user;
 using Newtonsoft.Json;
@@ -86,7 +87,7 @@ namespace chat_service
             password = password_textBox.Text;
             userModel.setPhone(phone_textBox.Text);
             userModel.setMail(mail_textBox.Text);
-            NetServiceContext.register(JsonConvert.SerializeObject(userModel));
+            NetServiceContext.register(JObject.Parse(JsonConvert.SerializeObject(userModel)));
         }
 
         // --> *********************************************** 委托调用 ********************************************

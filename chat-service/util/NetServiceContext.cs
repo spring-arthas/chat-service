@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Drawing;
 using System.Net;
 using System.Net.Sockets;
 using chat_service.net;
@@ -70,7 +71,7 @@ namespace chat_service.util
         {
             // 初始化socket
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.Linger, 10);
+            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, new LingerOption(true, 10));
             string[] address = remoteServiceAddress.Split(':');
             // 获取连接地址
             remoteIp = IPAddress.Parse(address[0]);
@@ -282,7 +283,7 @@ namespace chat_service.util
                         IPEndPoint remoteEP = new IPEndPoint(ip, port);
 
                         socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                        socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.Linger, 10);
+                        socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, new LingerOption(true, 10));
 
                         // Synchronous connect
                         socket.Connect(remoteEP);
@@ -720,7 +721,7 @@ namespace chat_service.util
         public static Socket getSendFileSocket()
         {
             Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, 10);
+            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, new LingerOption(true, 10));
             return socket;
         }
 
@@ -728,7 +729,7 @@ namespace chat_service.util
         public static Socket getReceiveFileSocket()
         {
             Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.Linger, 10);
+            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, new LingerOption(true, 10));
             return socket;
         }
 

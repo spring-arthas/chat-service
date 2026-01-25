@@ -539,9 +539,10 @@ namespace chat_service.file
             byte[] fileStreamBytes = new byte[this.fileReadSize];
             int packetIndex = 1;
             long currentReadSize = 0;
-            byte FileFrameTypeEnum = Convert.ToByte(FileFrameTypeEnum.GetEnumValue<FileFrameTypeEnum.TypeEnum>(FileFrameTypeEnum.TypeEnum.DATA_TRANSPORT.ToString()).ToString(), 2);
-            byte fileType = Convert.ToByte(FileTypeEnum.GetEnumValue<FileTypeEnum.TypeEnum>(FileTypeEnum.TypeEnum.ALL.ToString()).ToString(), 2);
-            byte fileOperateType = Convert.ToByte(FileOperateTypeEnum.GetEnumValue<FileOperateTypeEnum.TypeEnum>(FileOperateTypeEnum.TypeEnum.TRANSPORT.ToString()).ToString(), 2);
+            // 替换原有的 byte FileFrameTypeEnum 声明和赋值为如下内容
+            byte fileFrameType = (byte)FileFrameTypeEnum.GetEnumValue<FileFrameTypeEnum.TypeEnum>(FileFrameTypeEnum.TypeEnum.DATA_TRANSPORT.ToString());
+            byte fileType = (byte)FileTypeEnum.GetEnumValue<FileTypeEnum.TypeEnum>(FileTypeEnum.TypeEnum.ALL.ToString());
+            byte fileOperateType = (byte)FileOperateTypeEnum.GetEnumValue<FileOperateTypeEnum.TypeEnum>(FileOperateTypeEnum.TypeEnum.TRANSPORT.ToString());
             byte[] sendDataBytes = Encoding.UTF8.GetBytes(launchUserName + "," + tag);
             byte[] sendDataLengthBytes = BitConverter.GetBytes(IPAddress.HostToNetworkOrder((short)sendDataBytes.Length));
 

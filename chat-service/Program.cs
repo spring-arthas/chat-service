@@ -103,7 +103,7 @@ namespace chat_service
                     // 设置用户名用于下次登录默认代入
                     login_Register_Form.userName_textBox.Invoke(new MethodInvoker(delegate () { login_Register_Form.userName_textBox.Text = XmlConfigUtils.GetValue("userName");}));
                     // 设置密码用于下次登录默认代入
-                    login_Register_Form.password_textBox.Invoke(new MethodInvoker(delegate () { login_Register_Form.password_textBox.Text = XmlConfigUtils.GetValue("password");}))
+                    login_Register_Form.password_textBox.Invoke(new MethodInvoker(delegate () { login_Register_Form.password_textBox.Text = XmlConfigUtils.GetValue("password"); }));
                     // 设置连接信息，即socket连接结果信息
                     login_Register_Form.connect_label.Invoke(new MethodInvoker(delegate () { login_Register_Form.connect_label.Visible = true; login_Register_Form.connect_label.ForeColor = Color.Green; login_Register_Form.connect_label.Text = netResponse.getResult();}));
                     // 异步线程开始监听服务端回传数据，无限循环读取数据
