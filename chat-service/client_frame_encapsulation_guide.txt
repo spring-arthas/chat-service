@@ -1,0 +1,161 @@
+# 客户端帧封装规范指南
+
+本文档详细描述了客户端如何封装数据帧以与服务端 `TextTransmissionHandler` 进行交互。协议基于定长头部 + 变长数据体的格式。
+
+## 1. 协议基础结构
+
+所有请求帧必须遵循以下二进制结构：
+
+| 字段 | 长度 | 说明 |
+| :--- | :--- | :--- |
+| **Magic** | 2字节 | 固定值 `0xFA, 0xCE` |
+| **Type** | 1字节 | 帧类型代码（见下文具体定义） |
+| **Flags** | 1字节 | `0x00` (普通请求通常无特殊标志) |
+| **Length** | 4字节 | **Data** 部分的字节长度 (Big Endian) |
+| **Data** | N字节 | UTF-8 编码的 JSON 字符串 |
+
+---
+
+## 2. 用户认证模块 (User Auth)
+**处理类**: `TextTransmissionHandler` -> `processFrame`
+
+### 2.1 用户注册 (USER_REGISTER_REQ)
+*   **Frame Type**: `0x30`
+*   **Data (JSON)**:
+    ```json
+    {
+        "userName": "String (必填, max 5 chars)",
+        "password": "String (必填)"
+    }
+    ```
+*   **服务端处理**: 注册新用户。
+*   **异常**: 用户名超长、用户名重复。
+
+### 2.2 用户登录 (USER_LOGIN_REQ)
+*   **Frame Type**: `0x31`
+*   **Data (JSON)**:
+    ```json
+    {
+        "userName": "String (必填)",
+        "password": "String (必填)"
+    }
+    ```
+*   **服务端处理**: 验证凭据，成功后在连接及上下文保存用户信息。
+
+### 2.3 修改密码 (USER_CHANGE_PWD_REQ)
+*   **Frame Type**: `0x32`
+*   **Data (JSON)**:
+    ```json
+    {
+        "oldPassword": "String (必填)",
+        "newPassword": "String (必填)"
+    }
+    ```
+*   **前置条件**: 必须已登录（连接上下文包含 `loggedInUserId`）。
+
+### 2.4 退出登录 (USER_LOGOUT_REQ)
+*   **Frame Type**: `0x33`
+*   **Data (JSON)**: `null` 或 空 JSON `{}` (服务端不读取 Data 内容，但建议传空对象)
+*   **服务端处理**: 清除连接上下文中的用户信息。
+
+---
+
+## 3. 目录操作模块 (Directory Ops)
+**处理类**: `TextTransmissionHandler` -> `processFrame`
+
+### 3.1 创建目录 (DIR_CREATE_REQ)
+*   **Frame Type**: `0x10`
+*   **Data (JSON)**:
+    ```json
+    {
+        "parentId": Long (必填, 根目录可能为0或特定值),
+        "dirName": "String (必填)"
+    }
+    ```
+
+### 3.2 删除目录 (DIR_DELETE_REQ)
+*   **Frame Type**: `0x11`
+*   **Data (JSON)**:
+    ```json
+    {
+        "dirId": Long (必填)
+    }
+    ```
+*   **注意**: 目录必须为空才能删除。
+
+### 3.3 更新目录 (DIR_UPDATE_REQ)
+*   **Frame Type**: `0x12`
+*   **Data (JSON)**:
+    ```json
+    {
+        "dirId": Long (必填),
+        "newName": "String (必填)"
+    }
+    ```
+
+### 3.4 移动目录 (DIR_MOVE_REQ)
+*   **Frame Type**: `0x13`
+*   **Data (JSON)**:
+    ```json
+    {
+        "dirId": Long (必填, 被移动的目录ID),
+        "targetParentId": Long (必填, 目标父目录ID)
+    }
+    ```
+
+---
+
+## 4. 文件操作模块 (File Ops)
+**处理类**: `TextTransmissionHandler` -> `processFrame`
+**注意**: 此处仅涉及文件的元数据/管理操作，不包含文件内容上传/下载流。
+
+### 4.1 获取文件列表 (FILE_LIST_REQ)
+*   **Frame Type**: `0x40`
+*   **Data (JSON)**:
+    ```json
+    {
+        "dirId": Long (必填),
+        "pageNum": int (可选, 默认1),
+        "pageSize": int (可选, 默认10)
+    }
+    ```
+
+### 4.2 获取文件详情 (FILE_DETAIL_REQ)
+*   **Frame Type**: `0x41`
+*   **Data (JSON)**:
+    ```json
+    {
+        "fileId": Long (必填)
+    }
+    ```
+
+### 4.3 删除文件 (FILE_DELETE_REQ)
+*   **Frame Type**: `0x42`
+*   **Data (JSON)**:
+    ```json
+    {
+        "fileId": Long (必填)
+    }
+    ```
+
+---
+
+## 5. 响应处理 (Response Handling)
+
+服务端处理完毕后，会发送响应帧。客户端需根据响应帧类型解析结果。
+
+*   **用户相关响应类型**: `USER_RESPONSE (0x34)`
+*   **目录相关响应类型**: `DIR_RESPONSE (0x14)`
+*   **文件相关响应类型**: `FILE_RESPONSE (0x43)`
+
+### 响应数据结构 (JSON)
+所有响应帧的 Data 部分均为如下 JSON 结构：
+
+```json
+{
+    "success": boolean,      // true 表示成功, false 表示失败
+    "message": "String",     // 描述信息
+    "data": Object,          // (仅成功时) 返回的数据对象，如 userId, FileDto 等
+    "errorCode": "String"    // (仅失败时) 错误代码，如 "USER_NAME_DUPLICATE"
+}
+```
