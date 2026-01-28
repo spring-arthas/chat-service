@@ -68,7 +68,7 @@ namespace chat_service
         private string netActiveName = "";
 
         private string[] networkNames = null;
-        
+
 
         public Main_Form()
         {
@@ -80,7 +80,7 @@ namespace chat_service
             InitializeComponent();
 
             // 登陆成功后持有的用户信息
-            this.commonRes = (CommonRes) obj;
+            this.commonRes = (CommonRes)obj;
 
             // 当前对象
             main_Form = this;
@@ -222,7 +222,7 @@ namespace chat_service
                         for (int i = 0; i < uploadHelper.Count; i++)
                         {
                             AsyncPersonalFileUploadHelper helper = uploadHelper[i];
-                            cancleUploadTasks[i] = new Task<bool>(() => closeUploadTask(helper));                
+                            cancleUploadTasks[i] = new Task<bool>(() => closeUploadTask(helper));
                         }
                     }
 
@@ -323,13 +323,12 @@ namespace chat_service
                     downloadHelper.Clear();
 
                     // 执行退出操作，弹出登录框，重新选择用户登录
-                    UserModel userModel = new UserModel();
-                    userModel.setUserName(commonRes.getUserName());
-                    NetServiceContext.sendMessageNotWaiting(1, JsonConvert.SerializeObject(userModel), this);
+                    NetServiceContext.logout();
 
                     releaseTaskResource();
 
-                } else
+                }
+                else
                 {
                     e.Cancel = true;
                 }
@@ -337,9 +336,7 @@ namespace chat_service
             else
             {
                 // 执行退出操作，弹出登录框，重新选择用户登录
-                UserModel userModel = new UserModel();
-                userModel.setUserName(commonRes.getUserName());
-                NetServiceContext.sendMessageNotWaiting(1, JsonConvert.SerializeObject(userModel), this);
+                NetServiceContext.logout();
 
                 releaseTaskResource();
             }
@@ -409,7 +406,7 @@ namespace chat_service
                 MessageBox.Show("请选择需要聊天的用户");
                 return;
             }
-      
+
             this.send_message_richTextBox.Text.Replace("\r", "").Trim();
             this.send_message_richTextBox.Text.Replace("\n", "").Trim();
             this.send_message_richTextBox.Text.Replace("\r\n", "").Trim();
@@ -460,7 +457,7 @@ namespace chat_service
         // 好友列表选中某行触发
         private void user_list_dataGridView_CellClick(object sender, DataGridViewCellEventArgs e)
         {
-            if(e.RowIndex > -1)
+            if (e.RowIndex > -1)
             {
                 // 或
                 currentSelectUser = this.user_list_dataGridView.Rows[e.RowIndex].Cells[1].Value.ToString();
@@ -529,7 +526,7 @@ namespace chat_service
             }
             else
             {
-                
+
             }
 
             string taskStatus = this.task_list_dataGridView.Rows[e.RowIndex].Cells[4].Value.ToString();
@@ -548,8 +545,8 @@ namespace chat_service
                 this.task_list_dataGridView.Rows[e.RowIndex].Cells[4].Value = "接收中";
                 this.task_list_dataGridView.Rows[e.RowIndex].Cells[9].Value = "true";
                 taskStatus = "接收中";
-                this.message_richTextBox.AppendText("[ " + DateTime.Now.ToLocalTime().ToString() + " ] 开始接收来自用户 [ " 
-                    + this.task_list_dataGridView.Rows[e.RowIndex].Cells[12].Value + " ] 发送的 [ " 
+                this.message_richTextBox.AppendText("[ " + DateTime.Now.ToLocalTime().ToString() + " ] 开始接收来自用户 [ "
+                    + this.task_list_dataGridView.Rows[e.RowIndex].Cells[12].Value + " ] 发送的 [ "
                     + this.task_list_dataGridView.Rows[e.RowIndex].Cells[10].Value + " ] 文件");
 
                 this.beginFileTransportTask(this.task_list_dataGridView.Rows[e.RowIndex]);
@@ -628,7 +625,7 @@ namespace chat_service
             {
             }
         }
-        
+
         // 处理在线文件取消
         private void cancelFileTransportTask(DataGridViewRow dataGridViewRow)
         {
@@ -780,7 +777,7 @@ namespace chat_service
                 this.upload_progressBar.Visible = true;
             }
         }
-        
+
         // 文件在线传输发起端更新发送进度条
         public void backGroundWorkerSendOnlineTransport_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
@@ -872,15 +869,7 @@ namespace chat_service
                     this.file_sum_count_label.Visible = true;
                     this.file_sum_count_label.Text = "0";
 
-                    Dictionary<string, object> dictionary = new Dictionary<string, object>();
-                    dictionary.Add("userName", commonRes.getUserName());
-                    dictionary.Add("filePath", ((FileDto)CurrentNode.Tag).getFilePath());
-                    dictionary.Add("fileName", ((FileDto)CurrentNode.Tag).getFileName());
-                    dictionary.Add("pId", ((FileDto)CurrentNode.Tag).getPid().ToString());
-                    dictionary.Add("currentPage", currentPage);
-                    dictionary.Add("pageSize", pageSize);
-                    dictionary.Add("refreshFile", "true");
-                    NetServiceContext.sendMessageNotWaiting(6, JsonConvert.SerializeObject(dictionary), this);
+                    NetServiceContext.getFileList(((FileDto)CurrentNode.Tag).getId(), currentPage, pageSize);
                 }
             }
 
@@ -900,7 +889,14 @@ namespace chat_service
         // 删除文件夹
         private void toolStripMenuItem2_Click(object sender, EventArgs e)
         {
-
+            if (currentSelectedNode != null)
+            {
+                if (MessageBox.Show("确定删除该文件夹吗？", "系统提示", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+                {
+                    long dirId = ((FileDto)currentSelectedNode.Tag).getId();
+                    NetServiceContext.deleteDirectory(dirId);
+                }
+            }
         }
 
         // 修改文件夹
@@ -961,7 +957,7 @@ namespace chat_service
             this.file_status_label.Text = this.file_list_dataGridView.Rows[e.RowIndex].Cells[6].Value.ToString();
             this.file_status_label.Visible = true;
         }
-         
+
         // 文件列表中点击下载、删除
         private void file_list_dataGridView_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
@@ -1006,7 +1002,7 @@ namespace chat_service
             }
 
             // 删除（删除真实文件，但是数据库记录不删除，只是将文件记录的del状态由N变为Y）
-            if (CIndex == 8) 
+            if (CIndex == 8)
             {
                 if (taskStatus == "删除成功")
                 {
@@ -1033,15 +1029,8 @@ namespace chat_service
                     if (!isDownload)
                     {
                         // 向远程服务器发送删除文件通知，执行文件delete以及DB文件del状态更新
-                        Dictionary<string, object> deleteDictionary = new Dictionary<string, object>();
-                        FileDto currentFolder = (FileDto)currentSelectedNode.Tag;
-                        deleteDictionary.Add("folderId", currentFolder.getId());
-                        deleteDictionary.Add("filePaths", this.file_list_dataGridView.CurrentRow.Cells[3].Value.ToString());
-                        deleteDictionary.Add("tags", tag);
-                        deleteDictionary.Add("userName", commonRes.getUserName());
-                        deleteDictionary.Add("operate", "DELETE");
-
-                        NetServiceContext.sendMessageNotWaiting(11, JsonConvert.SerializeObject(deleteDictionary), this);
+                        long fileId = long.Parse(this.file_list_dataGridView.CurrentRow.Cells[4].Value.ToString());
+                        NetServiceContext.deleteFile(fileId);
                     }
                 }
             }
@@ -1059,15 +1048,7 @@ namespace chat_service
 
                 // 执行查询
                 FileDto fileDto = (FileDto)currentSelectedNode.Tag;
-                Dictionary<string, object> dictionary = new Dictionary<string, object>();
-                dictionary.Add("userName", commonRes.getUserName());
-                dictionary.Add("filePath", fileDto.getFilePath());
-                dictionary.Add("fileName", fileDto.getFileName());
-                dictionary.Add("pId", fileDto.getPid().ToString());
-                dictionary.Add("currentPage", currentPage);
-                dictionary.Add("pageSize", pageSize);
-                dictionary.Add("refreshFile", "true");
-                NetServiceContext.sendMessageNotWaiting(6, JsonConvert.SerializeObject(dictionary), this);
+                NetServiceContext.getFileList(((FileDto)currentSelectedNode.Tag).getId(), currentPage, pageSize);
             }
         }
 
@@ -1080,15 +1061,7 @@ namespace chat_service
 
                 // 执行查询
                 FileDto fileDto = (FileDto)currentSelectedNode.Tag;
-                Dictionary<string, object> dictionary = new Dictionary<string, object>();
-                dictionary.Add("userName", commonRes.getUserName());
-                dictionary.Add("filePath", fileDto.getFilePath());
-                dictionary.Add("fileName", fileDto.getFileName());
-                dictionary.Add("pId", fileDto.getPid().ToString());
-                dictionary.Add("currentPage", currentPage);
-                dictionary.Add("pageSize", pageSize);
-                dictionary.Add("refreshFile", "true");
-                NetServiceContext.sendMessageNotWaiting(6, JsonConvert.SerializeObject(dictionary), this);
+                NetServiceContext.getFileList(((FileDto)currentSelectedNode.Tag).getId(), currentPage, pageSize);
             }
         }
 
@@ -1237,11 +1210,9 @@ namespace chat_service
                         if (!isDownload)
                         {
                             // 只追加选中的行文件
+                            long fileId = long.Parse(this.file_list_dataGridView.Rows[i].Cells[4].Value.ToString());
                             Dictionary<string, object> dictionary = new Dictionary<string, object>();
-                            dictionary.Add("fileName", originFileName);
-                            dictionary.Add("filePath", this.file_list_dataGridView.Rows[i].Cells[3].Value.ToString());
-                            dictionary.Add("tag", this.file_list_dataGridView.Rows[i].Cells[9].Value.ToString());
-                            //dictionary.Add("rowNumber", i);
+                            dictionary.Add("fileId", fileId);
                             personalFileDeleteList.Add(dictionary);
 
                             selectCount++;
@@ -1272,31 +1243,12 @@ namespace chat_service
                 all_select_delete_button.Enabled = false;
                 all_file_refresh_button.Enabled = false;
 
-                Dictionary<string, object> deleteDictionary = new Dictionary<string, object>();
-                StringBuilder fileNames = new StringBuilder("");
-                StringBuilder filePaths = new StringBuilder("");
-                StringBuilder tags = new StringBuilder("");
-
-                // 创建待删除的文件信息
+                // 执行批量删除
                 for (int i = 0; i < personalFileDeleteList.Count; i++)
                 {
-                    Dictionary<string, object> dic = personalFileDeleteList[i];
-                    fileNames.Append(dic["fileName"] + ",");
-                    filePaths.Append(dic["filePath"] + ",");
-                    tags.Append(dic["tag"] + ",");
-                    //this.file_list_dataGridView.Rows[Convert.ToInt32(dic["rowNumber"].ToString())].Cells[5].Value = "删除中...";
+                    long id = long.Parse(personalFileDeleteList[i]["fileId"].ToString());
+                    NetServiceContext.deleteFile(id);
                 }
-
-                // 向远程服务器发送删除文件通知，执行文件delete以及DB文件del状态更新
-                FileDto currentFolder = (FileDto)currentSelectedNode.Tag;
-                deleteDictionary.Add("folderId", currentFolder.getId());
-                //deleteDictionary.Add("fileNames", fileNames.ToString().Substring(0, fileNames.ToString().LastIndexOf(",")));
-                deleteDictionary.Add("filePaths", filePaths.ToString().Substring(0, filePaths.ToString().LastIndexOf(",")));
-                deleteDictionary.Add("tags", tags.ToString().Substring(0, tags.ToString().LastIndexOf(",")));
-                deleteDictionary.Add("userName", commonRes.getUserName());
-                deleteDictionary.Add("operate", "DELETE");
-
-                NetServiceContext.sendMessageNotWaiting(11, JsonConvert.SerializeObject(deleteDictionary), this);
             }
         }
 
@@ -1314,15 +1266,7 @@ namespace chat_service
                 this.file_sum_count_label.Visible = true;
                 this.file_sum_count_label.Text = "0";
 
-                Dictionary<string, object> dictionary = new Dictionary<string, object>();
-                dictionary.Add("userName", commonRes.getUserName());
-                dictionary.Add("filePath", ((FileDto)currentSelectedNode.Tag).getFilePath());
-                dictionary.Add("fileName", ((FileDto)currentSelectedNode.Tag).getFileName());
-                dictionary.Add("pId", ((FileDto)currentSelectedNode.Tag).getPid().ToString());
-                dictionary.Add("currentPage", currentPage);
-                dictionary.Add("pageSize", pageSize);
-                dictionary.Add("refreshFile", "true");
-                NetServiceContext.sendMessageNotWaiting(6, JsonConvert.SerializeObject(dictionary), this);
+                NetServiceContext.getFileList(((FileDto)currentSelectedNode.Tag).getId(), currentPage, pageSize);
             }
         }
 
@@ -1342,7 +1286,7 @@ namespace chat_service
             {
                 if (taskStatus == "上传中..." || taskStatus == "上传成功")
                 {
-                    MessageBox.Show("文件 [ " + waitFileName + " ] " + taskStatus  + "，请勿重复上传！", "系统提示", MessageBoxButtons.OK, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1, MessageBoxOptions.DefaultDesktopOnly);
+                    MessageBox.Show("文件 [ " + waitFileName + " ] " + taskStatus + "，请勿重复上传！", "系统提示", MessageBoxButtons.OK, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1, MessageBoxOptions.DefaultDesktopOnly);
                     return;
                 }
 
@@ -1427,7 +1371,7 @@ namespace chat_service
                 MessageBox.Show("待上传文件列表为空，请先选取要上传的文件！", "系统提示", MessageBoxButtons.OK, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1, MessageBoxOptions.DefaultDesktopOnly);
                 return;
             }
-            
+
             // 遍历当前表格每个记录
             for (int i = 0; i < this.file_upload_list_dataGridView.Rows.Count; i++)
             {
@@ -1449,7 +1393,7 @@ namespace chat_service
                     }
                     else
                     {
-                        dictionary.Add("fileStream", (FileStream) obj);
+                        dictionary.Add("fileStream", (FileStream)obj);
                     }
 
                     dictionary.Add("fileSize", long.Parse(this.file_upload_list_dataGridView.Rows[i].Cells[15].Value.ToString()));
@@ -1587,7 +1531,7 @@ namespace chat_service
             if (fileSize < Math.Pow(1024, 1))
             {
                 // B
-                fileLength = fileSize.ToString() + "B"; 
+                fileLength = fileSize.ToString() + "B";
             }
 
             if (Math.Pow(1024, 1) < fileSize && fileSize <= Math.Pow(1024, 2))
@@ -1622,7 +1566,7 @@ namespace chat_service
             string taskStatus = this.file_download_list_dataGridView.CurrentRow.Cells[3].Value.ToString();
 
             // 下载
-            if (CIndex == 5) 
+            if (CIndex == 5)
             {
                 if (taskStatus == "下载中..." || taskStatus == "下载成功")
                 {
@@ -1818,14 +1762,8 @@ namespace chat_service
         {
             // 获取个人网盘文件夹
             // 执行退出操作，弹出登录框，重新选择用户登录
-            UserModel userModel = new UserModel();
-            userModel.setRefreshFile("true");
-            userModel.setUserName(userName);
-            userModel.setFileName(fileName);
-            userModel.setFilePath(filePath);
-            userModel.setCurrentPage(currentPage = 1);
-            userModel.setPageSize(pageSize);
-            NetServiceContext.sendMessageNotWaiting(6, JsonConvert.SerializeObject(userModel), this);
+            // 获取根目录文件列表 (Assuming root ID is 0)
+            NetServiceContext.getFileList(0, 1, pageSize);
         }
     }
 }

@@ -51,7 +51,7 @@ namespace chat_service
             InitializeComponent();
             register_Form = this;
         }
-        
+
         // 注册
         private void login_button_Click(object sender, EventArgs e)
         {
@@ -80,14 +80,9 @@ namespace chat_service
             }
 
             // 远程连接以及注册用户
-            UserModel userModel = new UserModel();
-            userModel.setUserName(userName_textBox.Text);
             userName = userName_textBox.Text;
-            userModel.setPassword(password_textBox.Text);
             password = password_textBox.Text;
-            userModel.setPhone(phone_textBox.Text);
-            userModel.setMail(mail_textBox.Text);
-            NetServiceContext.register(JObject.Parse(JsonConvert.SerializeObject(userModel)));
+            NetServiceContext.register(userName, password);
         }
 
         // --> *********************************************** 委托调用 ********************************************
@@ -115,7 +110,7 @@ namespace chat_service
                     return;
                 }
 
-                Login_Register_Form login_Register_Form = (Login_Register_Form) result.AsyncState;
+                Login_Register_Form login_Register_Form = (Login_Register_Form)result.AsyncState;
 
                 // 回填成功注册的用户名
                 login_Register_Form.userName_textBox.Invoke(new MethodInvoker(delegate ()

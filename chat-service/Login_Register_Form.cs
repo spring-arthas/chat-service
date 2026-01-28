@@ -35,22 +35,21 @@ namespace chat_service
             else
             {
                 CommonRes commonRes = (CommonRes)netResponse.getCommonRes();
-                if("201".Equals(commonRes.getCode()))
+                if (commonRes != null && "200".Equals(commonRes.getCode()))
                 {
-                    MessageBox.Show(commonRes.getMessage());
+                    this.Invoke(new MethodInvoker(delegate () { this.Hide(); }));
+
+                    // 打开聊天主解面
+                    return new Main_Form(netResponse.getCommonRes());
+                }
+                else
+                {
+                    if (commonRes != null)
+                    {
+                        MessageBox.Show(commonRes.getMessage());
+                    }
                     return null;
                 }
-
-                if ("202".Equals(commonRes.getCode()))
-                {
-                    MessageBox.Show(commonRes.getMessage());
-                    return null;
-                }
-
-                this.Invoke(new MethodInvoker(delegate () { this.Hide(); }));
-
-                // 打开聊天主解面
-                return new Main_Form(netResponse.getCommonRes());
             }
         }
 

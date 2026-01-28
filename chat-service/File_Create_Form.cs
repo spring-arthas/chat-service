@@ -47,23 +47,15 @@ namespace chat_service
 
             if (this.operate == "CREATE")
             {
-                Dictionary<string, object> dictionary = new Dictionary<string, object>();
-                dictionary.Add("id", ((FileDto)this.selectTreeNode.Tag).getId());
-                dictionary.Add("filePath", @System.IO.Path.GetDirectoryName(((FileDto)this.selectTreeNode.Tag).getFilePath()));
-                dictionary.Add("userName", this.userName);
-                dictionary.Add("newFileName", this.new_file_textBox.Text.Trim());
-                dictionary.Add("fileSize", 0L);
-                NetServiceContext.sendMessageNotWaiting(7, JsonConvert.SerializeObject(dictionary), this);
+                long parentId = ((FileDto)this.selectTreeNode.Tag).getId();
+                string dirName = this.new_file_textBox.Text.Trim();
+                NetServiceContext.createDirectory(parentId, dirName);
             }
             else if (this.operate == "UPDATE")
             {
-                Dictionary<string, object> dictionary = new Dictionary<string, object>();
-                dictionary.Add("id", ((FileDto)this.selectTreeNode.Tag).getId());
-                dictionary.Add("filePath", @System.IO.Path.GetDirectoryName(((FileDto)this.selectTreeNode.Tag).getFilePath()));
-                dictionary.Add("originFileName", ((FileDto)this.selectTreeNode.Tag).getFileName());
-                dictionary.Add("newFileName", this.new_file_textBox.Text.Trim());
-                dictionary.Add("fileSize", 0L);
-                NetServiceContext.sendMessageNotWaiting(8, JsonConvert.SerializeObject(dictionary), this);
+                long dirId = ((FileDto)this.selectTreeNode.Tag).getId();
+                string newName = this.new_file_textBox.Text.Trim();
+                NetServiceContext.updateDirectory(dirId, newName);
             }
         }
     }

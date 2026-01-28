@@ -31,10 +31,16 @@ namespace chat_service.util
         public const byte USER_RESPONSE = 0x34;
         // 文件帧类型
         public const byte DIR_CREATE_REQ = 0x10;
-        public const byte  DIR_DELETE_REQ = 0x11;
-        public const byte  DIR_UPDATE_REQ = 0x12;
+        public const byte DIR_DELETE_REQ = 0x11;
+        public const byte DIR_UPDATE_REQ = 0x12;
         public const byte DIR_MOVE_REQ = 0x13;
         public const byte DIR_RESPONSE = 0x14;
+
+        // 文件操作帧类型
+        public const byte FILE_LIST_REQ = 0x40;
+        public const byte FILE_DETAIL_REQ = 0x41;
+        public const byte FILE_DELETE_REQ = 0x42;
+        public const byte FILE_RESPONSE = 0x43;
 
 
 
@@ -113,9 +119,12 @@ namespace chat_service.util
         /// <summary>
         /// 客户端注册
         /// </summary>
-        public static void register(JObject request)
+        public static void register(string userName, string password)
         {
-            sendFrame(USER_LOGIN_REQ, request.ToString(Formatting.None));
+            JObject request = new JObject();
+            request["userName"] = userName;
+            request["password"] = password;
+            sendFrame(USER_REGISTER_REQ, request.ToString(Formatting.None));
             Console.WriteLine("发送注册请求: " + request.ToString(Formatting.None));
         }
 
@@ -249,6 +258,117 @@ namespace chat_service.util
             }
         }
 
+        // ==================== 用户操作方法 ====================
+
+        /// <summary>
+        /// 修改密码
+        /// </summary>
+        public static void changePassword(string oldPassword, string newPassword)
+        {
+            JObject request = new JObject();
+            request["oldPassword"] = oldPassword;
+            request["newPassword"] = newPassword;
+            sendFrame(USER_CHANGE_PWD_REQ, request.ToString(Formatting.None));
+            Console.WriteLine("发送修改密码请求: " + request.ToString(Formatting.None));
+        }
+
+        /// <summary>
+        /// 退出登录
+        /// </summary>
+        public static void logout()
+        {
+            JObject request = new JObject(); // 空JSON对象
+            sendFrame(USER_LOGOUT_REQ, request.ToString(Formatting.None));
+            Console.WriteLine("发送退出登录请求");
+        }
+
+        // ==================== 目录操作方法 ====================
+
+        /// <summary>
+        /// 创建目录
+        /// </summary>
+        public static void createDirectory(long parentId, string dirName)
+        {
+            JObject request = new JObject();
+            request["parentId"] = parentId;
+            request["dirName"] = dirName;
+            sendFrame(DIR_CREATE_REQ, request.ToString(Formatting.None));
+            Console.WriteLine("发送创建目录请求: " + request.ToString(Formatting.None));
+        }
+
+        /// <summary>
+        /// 删除目录
+        /// </summary>
+        public static void deleteDirectory(long dirId)
+        {
+            JObject request = new JObject();
+            request["dirId"] = dirId;
+            sendFrame(DIR_DELETE_REQ, request.ToString(Formatting.None));
+            Console.WriteLine("发送删除目录请求: " + request.ToString(Formatting.None));
+        }
+
+        /// <summary>
+        /// 更新目录
+        /// </summary>
+        public static void updateDirectory(long dirId, string newName)
+        {
+            JObject request = new JObject();
+            request["dirId"] = dirId;
+            request["newName"] = newName;
+            sendFrame(DIR_UPDATE_REQ, request.ToString(Formatting.None));
+            Console.WriteLine("发送更新目录请求: " + request.ToString(Formatting.None));
+        }
+
+        /// <summary>
+        /// 移动目录
+        /// </summary>
+        public static void moveDirectory(long dirId, long targetParentId)
+        {
+            JObject request = new JObject();
+            request["dirId"] = dirId;
+            request["targetParentId"] = targetParentId;
+            sendFrame(DIR_MOVE_REQ, request.ToString(Formatting.None));
+            Console.WriteLine("发送移动目录请求: " + request.ToString(Formatting.None));
+        }
+
+        // ==================== 文件操作方法 ====================
+
+        /// <summary>
+        /// 获取文件列表
+        /// </summary>
+        public static void getFileList(long dirId, int pageNum = 1, int pageSize = 10)
+        {
+            JObject request = new JObject();
+            request["dirId"] = dirId;
+            request["pageNum"] = pageNum;
+            request["pageSize"] = pageSize;
+            sendFrame(FILE_LIST_REQ, request.ToString(Formatting.None));
+            Console.WriteLine("发送获取文件列表请求: " + request.ToString(Formatting.None));
+        }
+
+        /// <summary>
+        /// 获取文件详情
+        /// </summary>
+        public static void getFileDetail(long fileId)
+        {
+            JObject request = new JObject();
+            request["fileId"] = fileId;
+            sendFrame(FILE_DETAIL_REQ, request.ToString(Formatting.None));
+            Console.WriteLine("发送获取文件详情请求: " + request.ToString(Formatting.None));
+        }
+
+        /// <summary>
+        /// 删除文件
+        /// </summary>
+        public static void deleteFile(long fileId)
+        {
+            JObject request = new JObject();
+            request["fileId"] = fileId;
+            sendFrame(FILE_DELETE_REQ, request.ToString(Formatting.None));
+            Console.WriteLine("发送删除文件请求: " + request.ToString(Formatting.None));
+        }
+
+
         public class NetFrame
         {
             public byte FrameType { get; set; }
@@ -256,7 +376,7 @@ namespace chat_service.util
         }
 
         // Deprecated readNextFrame removed as logic is inlined into receiveResponse
-        
+
         // Main receiving loop
         public static void receiveResponse(object obj)
         {
@@ -330,14 +450,14 @@ namespace chat_service.util
                     Array.Copy(header, 4, lenBytes, 0, 4);
                     if (BitConverter.IsLittleEndian)
                     {
-                         Array.Reverse(lenBytes);
+                        Array.Reverse(lenBytes);
                     }
                     int dataLength = BitConverter.ToInt32(lenBytes, 0);
 
                     // Sanity check
                     if (dataLength < 0 || dataLength > 50 * 1024 * 1024)
                     {
-                         throw new Exception($"非法的数据长度: {dataLength}");
+                        throw new Exception($"非法的数据长度: {dataLength}");
                     }
 
                     // 6. Read Data
@@ -345,54 +465,54 @@ namespace chat_service.util
                     int totalDataReceived = 0;
                     while (totalDataReceived < dataLength)
                     {
-                         int received = socket.Receive(data, totalDataReceived, dataLength - totalDataReceived, SocketFlags.None);
-                         if (received == 0)
-                         {
-                             throw new SocketException((int)SocketError.ConnectionReset);
-                         }
-                         totalDataReceived += received;
+                        int received = socket.Receive(data, totalDataReceived, dataLength - totalDataReceived, SocketFlags.None);
+                        if (received == 0)
+                        {
+                            throw new SocketException((int)SocketError.ConnectionReset);
+                        }
+                        totalDataReceived += received;
                     }
 
                     // 7. Dispatch
                     string json = Encoding.UTF8.GetString(data);
-                    
-                    try 
+
+                    try
                     {
                         // Use Invoke if needed for simple handlers, but dataHandler usually handles Invoke internaly
                         if (frameType == USER_RESPONSE)
                         {
-                             CommonRes commonRes = JsonConvert.DeserializeObject<CommonRes>(json);
-                             dataHandler(frameType, NetResponse.of(NetResponse.Response.SUCCESS, commonRes, commonRes.getMessage(), ""), obj);
+                            CommonRes commonRes = JsonConvert.DeserializeObject<CommonRes>(json);
+                            dataHandler(frameType, NetResponse.of(NetResponse.Response.SUCCESS, commonRes, commonRes.getMessage(), ""), obj);
                         }
                         else if (frameType == DIR_RESPONSE)
                         {
-                             FileDto fileDto = JsonConvert.DeserializeObject<FileDto>(json);
-                             dataHandler(frameType, NetResponse.of(NetResponse.Response.SUCCESS, fileDto, "Success", ""), obj);
+                            FileDto fileDto = JsonConvert.DeserializeObject<FileDto>(json);
+                            dataHandler(frameType, NetResponse.of(NetResponse.Response.SUCCESS, fileDto, "Success", ""), obj);
                         }
                         else if (frameType == (byte)3 || frameType == (byte)12)
                         {
-                             List<UserModel> userModels = JsonConvert.DeserializeObject<List<UserModel>>(json);
-                             dataHandler(frameType, NetResponse.of(NetResponse.Response.SUCCESS, userModels, "Success", ""), obj);
+                            List<UserModel> userModels = JsonConvert.DeserializeObject<List<UserModel>>(json);
+                            dataHandler(frameType, NetResponse.of(NetResponse.Response.SUCCESS, userModels, "Success", ""), obj);
                         }
                         else if (frameType == 6 || frameType == 7 || frameType == 8)
                         {
-                             FileDto fileDto = JsonConvert.DeserializeObject<FileDto>(json);
-                             dataHandler(frameType, NetResponse.of(NetResponse.Response.SUCCESS, fileDto, "Success", ""), obj);
+                            FileDto fileDto = JsonConvert.DeserializeObject<FileDto>(json);
+                            dataHandler(frameType, NetResponse.of(NetResponse.Response.SUCCESS, fileDto, "Success", ""), obj);
                         }
                         else if (frameType == 11)
                         {
-                             List<long> fileIdList = JsonConvert.DeserializeObject<List<long>>(json);
-                             dataHandler(frameType, NetResponse.of(NetResponse.Response.SUCCESS, fileIdList, "Success", ""), obj);
+                            List<long> fileIdList = JsonConvert.DeserializeObject<List<long>>(json);
+                            dataHandler(frameType, NetResponse.of(NetResponse.Response.SUCCESS, fileIdList, "Success", ""), obj);
                         }
                         else
                         {
-                             CommonRes commonRes = JsonConvert.DeserializeObject<CommonRes>(json);
-                             dataHandler(frameType, NetResponse.of(NetResponse.Response.SUCCESS, commonRes, commonRes.getMessage(), ""), obj);
+                            CommonRes commonRes = JsonConvert.DeserializeObject<CommonRes>(json);
+                            dataHandler(frameType, NetResponse.of(NetResponse.Response.SUCCESS, commonRes, commonRes.getMessage(), ""), obj);
                         }
                     }
-                    catch(Exception ex) 
+                    catch (Exception ex)
                     {
-                         Console.WriteLine("Data Handler Logic Error: " + ex.Message);
+                        Console.WriteLine("Data Handler Logic Error: " + ex.Message);
                     }
 
                 }
@@ -434,8 +554,12 @@ namespace chat_service.util
         /// <param name="obj"></param>
         public static void dataHandler(byte frameType, NetResponse netResponse, object obj)
         {
-            if (frameType == (byte)0) // 0：登录帧响应
+            if (frameType == USER_RESPONSE)) // 用户响应帧处理
             {
+                // 登录
+                // 注册
+                // 修改密码
+                // 退出登录
                 Login_Register_Form.loginDelegateHandler(obj, netResponse);
 
             }
@@ -1033,7 +1157,7 @@ namespace chat_service.util
             int currentNodeChildNodeCount = treeNode.Nodes.Count; // 当前节点下的子节点数量
             if (currentNodeChildNodeCount == 0) // == 0：表示当前节点下子节点为空，则直接追加节点
             {
-                FileDto dto = (FileDto) treeNode.Tag;
+                FileDto dto = (FileDto)treeNode.Tag;
                 if (dto.getId() == fileDto.getId())
                 {
                     // 如果当前节点子节点不为空，那就扩展字节点
@@ -1138,7 +1262,7 @@ namespace chat_service.util
         // 关闭当前Socket
         public static void close()
         {
-            if(socket == null)
+            if (socket == null)
             {
                 return;
             }

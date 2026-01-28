@@ -11,6 +11,56 @@ namespace chat_service.frame
     [DataContract, Serializable]
     public class CommonRes
     {
+
+    [DataMember]
+    private boolean success;
+    [DataMember]
+    private String message;
+    [DataMember]
+    private String errorCode;
+    [DataMember]
+    private Object data;
+
+     public boolean getSuccess()
+    {
+        return this.success;
+    }
+
+    public void setSuccess(string success)
+    {
+        this.success = success;
+    }
+     public string getMessage()
+    {
+        return this.message;
+    }
+
+    public void setMessage(string message)
+    {
+        this.message = message;
+    }
+
+    public string getErrorCode()
+    {
+        return this.errorCode;
+    }
+
+    public void setErrorCode(string errorCode)
+    {
+        this.errorCode = errorCode;
+    }
+
+    public Object getData()
+    {
+        return this.data;
+    }
+
+    public void setData(Object data)
+    {
+        this.data = data;
+    }
+
+
         [DataMember]
         private string code;
 
