@@ -22,6 +22,9 @@ using chat_service.frame;
 
 namespace chat_service
 {
+    /// <summary>
+    /// 注册窗体
+    /// </summary>
     public partial class Register_Form : Form
     {
         private static string userName = "", password = "";
@@ -30,8 +33,11 @@ namespace chat_service
 
         // 注册处理委托
         public delegate NetResponse RegisterHandler(NetResponse netResponse);
-
-        // 委托方法
+        /// <summary>
+        /// 注册处理方法
+        /// </summary>
+        /// <param name="netResponse"></param>
+        /// <returns></returns>
         public static NetResponse Register(NetResponse netResponse)
         {
             if (!netResponse.getResponse().Equals(NetResponse.Response.SUCCESS))
@@ -51,38 +57,20 @@ namespace chat_service
             InitializeComponent();
             register_Form = this;
         }
-
-        // 注册
+        /// <summary>
+        /// 注册逻辑
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void login_button_Click(object sender, EventArgs e)
         {
-            if (userName_textBox.Text == "")
-            {
-                MessageBox.Show("用户名不能为空");
-                return;
-            }
-
-            if (password_textBox.Text == "")
-            {
-                MessageBox.Show("密码不能为空");
-                return;
-            }
-
-            if (phone_textBox.Text == "")
-            {
-                MessageBox.Show("联系方式不能为空");
-                return;
-            }
-
-            if (mail_textBox.Text == "")
-            {
-                MessageBox.Show("邮箱不能为空");
-                return;
-            }
-
+            if (userName_textBox.Text == "") { MessageBox.Show("用户名不能为空"); return;}
+            if (password_textBox.Text == "") { MessageBox.Show("密码不能为空"); return;}
+            if (phone_textBox.Text == "") { MessageBox.Show("联系方式不能为空"); return; }
+            if (mail_textBox.Text == "") { MessageBox.Show("邮箱不能为空"); return; }
             // 远程连接以及注册用户
-            userName = userName_textBox.Text;
-            password = password_textBox.Text;
-            NetServiceContext.register(userName, password);
+            UserModel userDto = new UserModel(userName, password, phone_textBox.Text, mail_textBox.Text);
+            NetServiceContext.register(userDto);
         }
 
         // --> *********************************************** 委托调用 ********************************************
@@ -94,8 +82,10 @@ namespace chat_service
             RegisterHandler registerHandler = new RegisterHandler(Register);
             registerHandler.BeginInvoke(netResponse, new AsyncCallback(registerAsyncHandler), obj);
         }
-
-        // 注册成功后回调
+        /// <summary>
+        /// 注册成功后回调
+        /// </summary>
+        /// <param name="result"></param>
         public static void registerAsyncHandler(IAsyncResult result)
         {
             RegisterHandler registerHandler = (RegisterHandler)((AsyncResult)result).AsyncDelegate;
@@ -109,24 +99,19 @@ namespace chat_service
                     MessageBox.Show(netResponse.getResult());
                     return;
                 }
-
                 Login_Register_Form login_Register_Form = (Login_Register_Form)result.AsyncState;
-
                 // 回填成功注册的用户名
                 login_Register_Form.userName_textBox.Invoke(new MethodInvoker(delegate ()
                 {
                     login_Register_Form.userName_textBox.Text = userName;
                 }));
-
                 // 回填成功注册的密码
                 login_Register_Form.password_textBox.Invoke(new MethodInvoker(delegate ()
                 {
                     login_Register_Form.password_textBox.Text = password;
                 }));
-
                 // 弹窗提示注册成功
                 MessageBox.Show("用户名：[ " + userName + " ] " + netResponse.getResult());
-
                 // 关闭注册窗口
                 register_Form.Invoke(new MethodInvoker(delegate ()
                 {

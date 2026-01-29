@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -35,15 +36,11 @@ namespace chat_service.util
         public const byte DIR_UPDATE_REQ = 0x12;
         public const byte DIR_MOVE_REQ = 0x13;
         public const byte DIR_RESPONSE = 0x14;
-
         // 文件操作帧类型
         public const byte FILE_LIST_REQ = 0x40;
         public const byte FILE_DETAIL_REQ = 0x41;
         public const byte FILE_DELETE_REQ = 0x42;
         public const byte FILE_RESPONSE = 0x43;
-
-
-
         // 远程服务地址
         public static string remoteServiceAddress = "", remoteFileServiceAddress = "", remoteFileDownloadServiceAddress = "";
         // 下载路径
@@ -71,7 +68,74 @@ namespace chat_service.util
         // socket接收事件
         private static ManualResetEvent receiveDone = new ManualResetEvent(false);
 
+        // ==================== 同步请求上下文 ====================
+        private class RequestWaitState
+        {
+            public ManualResetEvent WaitEvent { get; } = new ManualResetEvent(false);
+            public NetResponse Response { get; set; }
+        }
 
+        // Key: Expected Response Frame Type, Value: Wait State
+        private static ConcurrentDictionary<byte, RequestWaitState> _pendingRequests = new ConcurrentDictionary<byte, RequestWaitState>();
+
+        // 发送并等待响应
+        private static NetResponse sendFrameWait(byte requestFrameType, string jsonData, byte expectedResponseType, int timeoutMillis = 10000)
+        {
+            RequestWaitState waitState = new RequestWaitState();
+
+            // 注册监听
+            // 注意：如果多个线程等待同一个响应类型，这里可能会有问题。
+            // 假设同一时间只有一个特定类型的请求在进行（通常是一个用户操作对应一个响应），
+            // 或者通过更复杂的Key (FrameType) 来区分。
+            // 目前简单实现：假设FrameType能唯一对应Pending Request。
+            _pendingRequests[expectedResponseType] = waitState;
+
+            try
+            {
+                // 发送数据
+                sendFrame(requestFrameType, jsonData);
+
+                // 等待信号
+                if (waitState.WaitEvent.WaitOne(timeoutMillis))
+                {
+                    // 收到信号
+                    return waitState.Response;
+                }
+                else
+                {
+                    // 超时
+                    return NetResponse.ofFail("请求超时，服务器未响应");
+                }
+            }
+            catch (Exception ex)
+            {
+                return NetResponse.ofFail("请求异常: " + ex.Message);
+            }
+            finally
+            {
+                // 清理
+                RequestWaitState removed;
+                _pendingRequests.TryRemove(expectedResponseType, out removed);
+            }
+        }
+
+        // 聊天连接回调 
+        private static void chatConnectCallback(IAsyncResult ar)
+        {
+            try
+            {
+                // Retrieve the socket from the state object.     
+                Socket client = (Socket)ar.AsyncState;
+                // 完成连接    
+                client.EndConnect(ar);
+                // Signal that the connection has been made.     
+                connectDone.Set();
+            }
+            catch (Exception e)
+            {
+                string message = e.Message;
+            }
+        }
         // 建立聊天连接
         public static NetResponse chatInitSocketAndConnect()
         {
@@ -108,128 +172,33 @@ namespace chat_service.util
         /// <summary>
         /// 客户端登录
         /// </summary>
-        public static void login(string userName, string password)
+        /// <summary>
+        /// 客户端登录 (同步)
+        /// </summary>
+        public static NetResponse login(string userName, string password)
         {
             JObject request = new JObject();
             request["userName"] = userName;
             request["password"] = password;
-            sendFrame(USER_LOGIN_REQ, request.ToString(Formatting.None));
             Console.WriteLine("发送登录请求: " + request.ToString(Formatting.None));
+            // 0x31 -> Expect 0x34 (USER_RESPONSE)
+            return sendFrameWait(USER_LOGIN_REQ, request.ToString(Formatting.None), USER_RESPONSE);
         }
         /// <summary>
-        /// 客户端注册
+        /// 客户端注册 (同步)
         /// </summary>
-        public static void register(string userName, string password)
+        public static NetResponse register(UserModel userModel)
         {
             JObject request = new JObject();
-            request["userName"] = userName;
-            request["password"] = password;
-            sendFrame(USER_REGISTER_REQ, request.ToString(Formatting.None));
+            request["userName"] = userModel.getUserName();
+            request["password"] = userModel.getPassword();
+            request["phone"] = userModel.getPhone();
+            request["mail"] = userModel.getMail();
             Console.WriteLine("发送注册请求: " + request.ToString(Formatting.None));
+            // 0x30 -> Expect 0x04 (Assuming Type 4 is Register Response based on handlers) or USER_RESPONSE?
+            // Looking at receiveResponse: frameType == 4 is Register Response (Register_Form.registerDelegateHandler)
+            return sendFrameWait(USER_REGISTER_REQ, request.ToString(Formatting.None), (byte)4);
         }
-
-        // 聊天连接回调
-        private static void chatConnectCallback(IAsyncResult ar)
-        {
-            try
-            {
-                // Retrieve the socket from the state object.     
-                Socket client = (Socket)ar.AsyncState;
-                // 完成连接    
-                client.EndConnect(ar);
-                // Signal that the connection has been made.     
-                connectDone.Set();
-            }
-            catch (Exception e)
-            {
-                string message = e.Message;
-            }
-        }
-
-        // 聊天消息同步发送无需等待返回
-        public static void sendMessageNotWaiting(byte frameType, string message, object obj)
-        {
-            if (!socket.Connected)
-            {
-                Main_Form.main_Form.result_label.Invoke(new MethodInvoker(delegate ()
-                {
-                    Main_Form.main_Form.result_label.Text = "与服务端连接状态异常, 尝试重启客户端......";
-                }));
-                return;
-            }
-
-
-            // 1 、消息内容数据
-            byte[] frameContextBytes = Encoding.UTF8.GetBytes(message);
-            // 2 、消息内容长度
-            byte[] frameLenthBytes = BitConverter.GetBytes((short)frameContextBytes.Length); Array.Reverse(frameLenthBytes);
-            // 3、是否是结束帧
-            byte endFrame = (byte)1;
-            // 4、帧总长度数据
-            byte[] frameSumLengthBytes = BitConverter.GetBytes(IPAddress.HostToNetworkOrder(4 + 1 + 1 + 4 + frameLenthBytes.Length + frameContextBytes.Length));
-            // 5、构造发送字节数组  4B: 帧总长度数据  1B: 是否是结束帧(1:是，0：不是)1B: 帧类型
-            byte[] sendBytes = new byte[4 + 1 + 1 + 4 + frameLenthBytes.Length + frameContextBytes.Length];
-
-            // 6、封装数据
-            sendBytes[0] = frameSumLengthBytes[0];
-            sendBytes[1] = frameSumLengthBytes[1];
-            sendBytes[2] = frameSumLengthBytes[2];
-            sendBytes[3] = frameSumLengthBytes[3];
-            sendBytes[4] = endFrame;
-            byte[] frameIndexBytes = BitConverter.GetBytes(IPAddress.HostToNetworkOrder(1)); // 当前真实数据,int表示占据4个字节
-            frameIndexBytes.CopyTo(sendBytes, 5);
-
-            sendBytes[9] = (byte)frameType;
-            frameLenthBytes.CopyTo(sendBytes, 10);
-            frameContextBytes.CopyTo(sendBytes, frameLenthBytes.Length + 10);
-            // 7、主线程阻塞进行数据发送，不采取异步线程
-            Dictionary<string, object> stateDictionary = new Dictionary<string, object>();
-            stateDictionary.Add("socket", socket);
-            stateDictionary.Add("object", obj);
-            socket.BeginSend(sendBytes, 0, sendBytes.Length, 0, new AsyncCallback(sendChatMesageCallback), stateDictionary);
-        }
-
-        // 聊天消息发送回调
-        private static void sendChatMesageCallback(IAsyncResult ar)
-        {
-            Object obj = null;
-            try
-            {
-                Dictionary<string, object> stateDictionary = (Dictionary<string, object>)ar.AsyncState;
-                obj = stateDictionary["object"];
-                Socket socket = (Socket)stateDictionary["socket"];
-                socket.EndSend(ar);
-                //handler.Shutdown(SocketShutdown.Both);
-                //handler.Close();
-            }
-            catch (Exception e)
-            {
-                // 设置主窗体连接状态
-                if (obj is Login_Register_Form)
-                {
-                    ((Login_Register_Form)obj).Invoke(new MethodInvoker(delegate () { ((Login_Register_Form)obj).connect_label.Text = "连接中......"; }));
-                }
-
-                // 设置登录窗体连接状态
-                if (obj is Main_Form)
-                {
-                    ((Main_Form)obj).Invoke(new MethodInvoker(delegate () { ((Main_Form)obj).result_label.Text = "连接中......"; }));
-                }
-
-                // 尝试重连
-            }
-
-        }
-
-
-
-
-
-
-
-
-
-
 
         private static void sendFrame(byte frameType, string jsonData)
         {
@@ -239,8 +208,7 @@ namespace chat_service.util
             buffer[0] = MAGIC[0];
             buffer[1] = MAGIC[1];
             buffer[2] = frameType;
-            buffer[3] = 0; // flags
-
+            i buffer[3] = 0; // flags
             // buffer.putInt(data.length); (Big Endian in Java)
             byte[] lenBytes = BitConverter.GetBytes(data.Length);
             if (BitConverter.IsLittleEndian)
@@ -248,9 +216,7 @@ namespace chat_service.util
                 Array.Reverse(lenBytes);
             }
             Array.Copy(lenBytes, 0, buffer, 4, 4);
-
             Array.Copy(data, 0, buffer, 8, data.Length);
-
             int sent = 0;
             while (sent < buffer.Length)
             {
@@ -263,23 +229,31 @@ namespace chat_service.util
         /// <summary>
         /// 修改密码
         /// </summary>
-        public static void changePassword(string oldPassword, string newPassword)
+        /// <summary>
+        /// 修改密码
+        /// </summary>
+        public static NetResponse changePassword(string oldPassword, string newPassword)
         {
             JObject request = new JObject();
             request["oldPassword"] = oldPassword;
             request["newPassword"] = newPassword;
-            sendFrame(USER_CHANGE_PWD_REQ, request.ToString(Formatting.None));
             Console.WriteLine("发送修改密码请求: " + request.ToString(Formatting.None));
+            return sendFrameWait(USER_CHANGE_PWD_REQ, request.ToString(Formatting.None), USER_RESPONSE);
         }
 
         /// <summary>
         /// 退出登录
         /// </summary>
-        public static void logout()
+        /// <summary>
+        /// 退出登录
+        /// </summary>
+        public static NetResponse logout()
         {
             JObject request = new JObject(); // 空JSON对象
-            sendFrame(USER_LOGOUT_REQ, request.ToString(Formatting.None));
             Console.WriteLine("发送退出登录请求");
+            // 0x33 (Logout) -> Expect 0x01 (Logout Response based on handlers) or USER_RESPONSE?
+            // receiveResponse handler: frameType == 1 is Logout Response
+            return sendFrameWait(USER_LOGOUT_REQ, request.ToString(Formatting.None), (byte)1);
         }
 
         // ==================== 目录操作方法 ====================
@@ -287,48 +261,67 @@ namespace chat_service.util
         /// <summary>
         /// 创建目录
         /// </summary>
-        public static void createDirectory(long parentId, string dirName)
+        /// <summary>
+        /// 创建目录
+        /// </summary>
+        public static NetResponse createDirectory(long parentId, string dirName)
         {
             JObject request = new JObject();
             request["parentId"] = parentId;
             request["dirName"] = dirName;
-            sendFrame(DIR_CREATE_REQ, request.ToString(Formatting.None));
             Console.WriteLine("发送创建目录请求: " + request.ToString(Formatting.None));
+            // 0x10 (Dir Create) -> Expect 0x07 (Dir Create Resp based on handler) OR DIR_RESPONSE (0x14)?
+            // receiveResponse says: frameType == (byte)7 (个人网盘文件夹创建)
+            return sendFrameWait(DIR_CREATE_REQ, request.ToString(Formatting.None), (byte)7);
         }
 
         /// <summary>
         /// 删除目录
         /// </summary>
-        public static void deleteDirectory(long dirId)
+        /// <summary>
+        /// 删除目录
+        /// </summary>
+        public static NetResponse deleteDirectory(long dirId)
         {
             JObject request = new JObject();
             request["dirId"] = dirId;
-            sendFrame(DIR_DELETE_REQ, request.ToString(Formatting.None));
             Console.WriteLine("发送删除目录请求: " + request.ToString(Formatting.None));
+            // 0x11 (Dir Delete) -> Expect 0x06 (Dir Refresh/Response) or DIR_RESPONSE?
+            // Usually delete triggers a refresh list (Frame 6 or DIR_RESPONSE)
+            return sendFrameWait(DIR_DELETE_REQ, request.ToString(Formatting.None), DIR_RESPONSE);
         }
 
         /// <summary>
         /// 更新目录
         /// </summary>
-        public static void updateDirectory(long dirId, string newName)
+        /// <summary>
+        /// 更新目录
+        /// </summary>
+        public static NetResponse updateDirectory(long dirId, string newName)
         {
             JObject request = new JObject();
             request["dirId"] = dirId;
             request["newName"] = newName;
-            sendFrame(DIR_UPDATE_REQ, request.ToString(Formatting.None));
             Console.WriteLine("发送更新目录请求: " + request.ToString(Formatting.None));
+            // 0x12 -> receiveResponse: frameType == 8 (文件夹名称修改)
+            return sendFrameWait(DIR_UPDATE_REQ, request.ToString(Formatting.None), (byte)8);
         }
 
         /// <summary>
         /// 移动目录
         /// </summary>
-        public static void moveDirectory(long dirId, long targetParentId)
+        /// <summary>
+        /// 移动目录
+        /// </summary>
+        public static NetResponse moveDirectory(long dirId, long targetParentId)
         {
             JObject request = new JObject();
             request["dirId"] = dirId;
             request["targetParentId"] = targetParentId;
-            sendFrame(DIR_MOVE_REQ, request.ToString(Formatting.None));
             Console.WriteLine("发送移动目录请求: " + request.ToString(Formatting.None));
+            // 0x13 -> Expect DIR_RESPONSE (0x14) or Refresh (0x06)?
+            // Assuming DIR_RESPONSE or 0x06. Let's assume DIR_RESPONSE for now as structure update.
+            return sendFrameWait(DIR_MOVE_REQ, request.ToString(Formatting.None), DIR_RESPONSE);
         }
 
         // ==================== 文件操作方法 ====================
@@ -336,36 +329,50 @@ namespace chat_service.util
         /// <summary>
         /// 获取文件列表
         /// </summary>
-        public static void getFileList(long dirId, int pageNum = 1, int pageSize = 10)
+        /// <summary>
+        /// 获取文件列表
+        /// </summary>
+        public static NetResponse getFileList(long dirId, int pageNum = 1, int pageSize = 10)
         {
             JObject request = new JObject();
             request["dirId"] = dirId;
             request["pageNum"] = pageNum;
             request["pageSize"] = pageSize;
-            sendFrame(FILE_LIST_REQ, request.ToString(Formatting.None));
             Console.WriteLine("发送获取文件列表请求: " + request.ToString(Formatting.None));
+            // 0x40 -> Expect FILE_RESPONSE (0x43) or 0x06?
+            // Usually File List returns Frame 6 (FileDto)
+            return sendFrameWait(FILE_LIST_REQ, request.ToString(Formatting.None), (byte)6);
         }
 
         /// <summary>
         /// 获取文件详情
         /// </summary>
-        public static void getFileDetail(long fileId)
+        /// <summary>
+        /// 获取文件详情
+        /// </summary>
+        public static NetResponse getFileDetail(long fileId)
         {
             JObject request = new JObject();
             request["fileId"] = fileId;
-            sendFrame(FILE_DETAIL_REQ, request.ToString(Formatting.None));
             Console.WriteLine("发送获取文件详情请求: " + request.ToString(Formatting.None));
+            // 0x41 -> Expect FILE_RESPONSE
+            return sendFrameWait(FILE_DETAIL_REQ, request.ToString(Formatting.None), FILE_RESPONSE);
         }
 
         /// <summary>
         /// 删除文件
         /// </summary>
-        public static void deleteFile(long fileId)
+        /// <summary>
+        /// 删除文件
+        /// </summary>
+        public static NetResponse deleteFile(long fileId)
         {
             JObject request = new JObject();
             request["fileId"] = fileId;
-            sendFrame(FILE_DELETE_REQ, request.ToString(Formatting.None));
             Console.WriteLine("发送删除文件请求: " + request.ToString(Formatting.None));
+            // 0x42 -> Expect 0x0B (11) ?
+            // receiveResponse: frameType == 11 is delete success/list update
+            return sendFrameWait(FILE_DELETE_REQ, request.ToString(Formatting.None), (byte)11);
         }
 
 
@@ -475,6 +482,67 @@ namespace chat_service.util
 
                     // 7. Dispatch
                     string json = Encoding.UTF8.GetString(data);
+
+                    // --- 同步响应拦截处理 ---
+                    if (_pendingRequests.ContainsKey(frameType))
+                    {
+                        RequestWaitState waitState;
+                        if (_pendingRequests.TryGetValue(frameType, out waitState))
+                        {
+                            // 构造反序列化对象，复用下方的逻辑思路，但直接在这里处理
+                            try
+                            {
+                                NetResponse response = null;
+                                if (frameType == USER_RESPONSE)
+                                {
+                                    CommonRes commonRes = JsonConvert.DeserializeObject<CommonRes>(json);
+                                    response = NetResponse.of(NetResponse.Response.SUCCESS, commonRes, commonRes.getMessage(), "");
+                                }
+                                else if (frameType == DIR_RESPONSE)
+                                {
+                                    FileDto fileDto = JsonConvert.DeserializeObject<FileDto>(json);
+                                    response = NetResponse.of(NetResponse.Response.SUCCESS, fileDto, "Success", "");
+                                }
+                                else if (frameType == (byte)3 || frameType == (byte)12) // User List
+                                {
+                                    List<UserModel> userModels = JsonConvert.DeserializeObject<List<UserModel>>(json);
+                                    response = NetResponse.of(NetResponse.Response.SUCCESS, userModels, "Success", "");
+                                }
+                                else if (frameType == 6 || frameType == 7 || frameType == 8) // File/Dir ops
+                                {
+                                    FileDto fileDto = JsonConvert.DeserializeObject<FileDto>(json);
+                                    response = NetResponse.of(NetResponse.Response.SUCCESS, fileDto, "Success", "");
+                                }
+                                else if (frameType == 11) // File list delete?
+                                {
+                                    List<long> fileIdList = JsonConvert.DeserializeObject<List<long>>(json);
+                                    response = NetResponse.of(NetResponse.Response.SUCCESS, fileIdList, "Success", "");
+                                }
+                                else if (frameType == 4) // Register
+                                {
+                                    CommonRes commonRes = JsonConvert.DeserializeObject<CommonRes>(json);
+                                    response = NetResponse.of(NetResponse.Response.SUCCESS, commonRes, commonRes.getMessage(), "");
+                                }
+                                else
+                                {
+                                    CommonRes commonRes = JsonConvert.DeserializeObject<CommonRes>(json);
+                                    response = NetResponse.of(NetResponse.Response.SUCCESS, commonRes, commonRes.getMessage(), "");
+                                }
+
+                                waitState.Response = response;
+                                waitState.WaitEvent.Set();
+                                // 拦截成功，跳过后续异步Handler
+                                continue;
+                            }
+                            catch (Exception ex)
+                            {
+                                waitState.Response = NetResponse.ofFail("解析响应异常: " + ex.Message);
+                                waitState.WaitEvent.Set();
+                                continue;
+                            }
+                        }
+                    }
+                    // -----------------------
 
                     try
                     {
@@ -863,8 +931,13 @@ namespace chat_service.util
 
 
 
-        // 同步建立文件在线传输连接
-        public static NetResponse initSendFileOnlineTransportSocketAndConnect(Socket fileSendSocket, string taskType)
+        /// <summary>
+        /// 初始化文件发送socket并连接到服务器
+        /// </summary>
+        /// <param name="fileSendSocket"></param>
+        /// <param name="taskType"></param>
+        /// <returns></returns>
+        public static NetResponse initSocketAndConnect(Socket fileSendSocket, string taskType)
         {
             if (taskType == "FILE.UPLOAD")
             {

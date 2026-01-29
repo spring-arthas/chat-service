@@ -24,21 +24,17 @@ namespace chat_service.user
         private string mail;
 
         [DataMember]
-        private string refresh;
-
-        [DataMember]
         private string registerDate;
 
         [DataMember]
         private string lastLoginDate;
-
-        [DataMember]
-        private string status;
         
 
 
 
-
+        [DataMember]
+        private string refresh;
+        
         [DataMember]
         private string refreshFile;
 
