@@ -45,7 +45,7 @@
             this.label1.Location = new System.Drawing.Point(79, 106);
             this.label1.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(66, 19);
+            this.label1.Size = new System.Drawing.Size(100, 29);
             this.label1.TabIndex = 0;
             this.label1.Text = "用户名";
             // 
@@ -55,7 +55,7 @@
             this.label2.Location = new System.Drawing.Point(79, 159);
             this.label2.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(47, 19);
+            this.label2.Size = new System.Drawing.Size(71, 29);
             this.label2.TabIndex = 1;
             this.label2.Text = "密码";
             // 
@@ -63,7 +63,7 @@
             // 
             this.userName_textBox.Location = new System.Drawing.Point(164, 103);
             this.userName_textBox.Name = "userName_textBox";
-            this.userName_textBox.Size = new System.Drawing.Size(193, 29);
+            this.userName_textBox.Size = new System.Drawing.Size(193, 40);
             this.userName_textBox.TabIndex = 2;
             this.userName_textBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.userName_textBox_KeyDown);
             // 
@@ -71,7 +71,7 @@
             // 
             this.password_textBox.Location = new System.Drawing.Point(164, 156);
             this.password_textBox.Name = "password_textBox";
-            this.password_textBox.Size = new System.Drawing.Size(193, 29);
+            this.password_textBox.Size = new System.Drawing.Size(193, 40);
             this.password_textBox.TabIndex = 3;
             this.password_textBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.password_textBox_KeyDown);
             // 
@@ -104,7 +104,7 @@
             this.label3.Location = new System.Drawing.Point(128, 36);
             this.label3.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(218, 29);
+            this.label3.Size = new System.Drawing.Size(327, 44);
             this.label3.TabIndex = 6;
             this.label3.Text = "Nio 网盘客户端";
             // 
@@ -115,7 +115,7 @@
             this.setting_label.Location = new System.Drawing.Point(419, 9);
             this.setting_label.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.setting_label.Name = "setting_label";
-            this.setting_label.Size = new System.Drawing.Size(35, 14);
+            this.setting_label.Size = new System.Drawing.Size(52, 21);
             this.setting_label.TabIndex = 7;
             this.setting_label.Text = "设置";
             this.setting_label.TextAlign = System.Drawing.ContentAlignment.TopRight;
@@ -126,10 +126,10 @@
             this.connect_label.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.connect_label.AutoSize = true;
             this.connect_label.Font = new System.Drawing.Font("宋体", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.connect_label.Location = new System.Drawing.Point(4, 305);
+            this.connect_label.Location = new System.Drawing.Point(4, 290);
             this.connect_label.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.connect_label.Name = "connect_label";
-            this.connect_label.Size = new System.Drawing.Size(63, 14);
+            this.connect_label.Size = new System.Drawing.Size(94, 21);
             this.connect_label.TabIndex = 8;
             this.connect_label.Text = "连接结果";
             this.connect_label.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -137,10 +137,10 @@
             // 
             // Login_Register_Form
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 19F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(15F, 29F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.ClientSize = new System.Drawing.Size(459, 328);
+            this.ClientSize = new System.Drawing.Size(484, 313);
             this.Controls.Add(this.connect_label);
             this.Controls.Add(this.setting_label);
             this.Controls.Add(this.label3);

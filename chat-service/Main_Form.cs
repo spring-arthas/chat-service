@@ -68,8 +68,9 @@ namespace chat_service
         private string netActiveName = "";
 
         private string[] networkNames = null;
-
-
+        /// <summary>
+        /// 主窗体
+        /// </summary>
         public Main_Form()
         {
             InitializeComponent();
@@ -81,10 +82,8 @@ namespace chat_service
 
             // 登陆成功后持有的用户信息
             this.commonRes = (CommonRes)obj;
-
             // 当前对象
             main_Form = this;
-
             // 初始化解面数据
             this.initData();
         }
@@ -92,33 +91,25 @@ namespace chat_service
         // 初始化展示数据
         private void initData()
         {
-
             // 远程服务地址
             remote_address_textBox.Text = NetServiceContext.remoteServiceAddress;
-
             // 欢迎术语
             user_label.Text = "欢迎，" + commonRes.getUserName() + "使用，登录时间: " + commonRes.getTime();
-
             // 与服务器连接结果
             result_label.Visible = true;
             result_label.ForeColor = Color.Green;
             result_label.Text = "网络连接正常......";
-
             // 定时刷新时间
             this.timer1.Interval = 1000;//设置定时器触发间隔
             this.timer1.Start();    //启动定时器
-
             // 定时网络判断
             this.timer2.Interval = 120000;//设置定时器触发间隔
             this.timer2.Start();    //启动定时器
-
             // 个人网盘
             this.personal_file_treeView.ExpandAll();
             //FileService.createFileRootTree(this.personal_file_treeView, commonRes.getUserName().Trim());
-
             // 下载路径
             global_download_path_label.Text = "当前下载路径: " + NetServiceContext.globalDownloadPath;
-
             // 创建下载文件路径对应文件夹
             this.createDownloadFolder();
         }
@@ -134,15 +125,21 @@ namespace chat_service
                 }
             }
         }
-
-        // 定时更新当前时间
+        /// <summary>
+        /// 定时更新当前时间
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void timer1_Tick(object sender, EventArgs e)
         {
             date_label.ForeColor = Color.Green;
             date_label.Text = "当前时间: " + DateTime.Now.ToLocalTime().ToString();
         }
-
-        //刷新网络速率
+        /// <summary>
+        /// 刷新网络速率
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void timer3_Tick(object sender, EventArgs e)
         {
             // 获取活跃的网卡
@@ -182,27 +179,28 @@ namespace chat_service
                             networkS = new PerformanceCounter("Network Interface", "Bytes Sent/sec", name);
                         }
 
-                        net_rate_label.Text = "网卡名称: [" + name + "], 下载网速: [" + (networkR.NextValue() / 1024 / 1024).ToString("0.00") + "mb/s]  上传网速: [" + (networkS.NextValue() / 1024 / 1024).ToString("0.00") + "mb/s]  ";
+                        net_rate_label.Text = "网卡名称: [" + name + "], 下载网速: [" + (networkR.NextValue() / 1024 / 1024).ToString("0.00") + "MB/s]  上传网速: [" + (networkS.NextValue() / 1024 / 1024).ToString("0.00") + "MB/s]  ";
                         return;
                     }
                 }
             }
 
-            net_rate_label.Text = "网卡名称: [" + netActiveName + "], 下载网速: [" + (networkR.NextValue() / 1024 / 1024).ToString("0.00") + "mb/s]  上传网速: [" + (networkS.NextValue() / 1024 / 1024).ToString("0.00") + "mb/s]  ";
+            net_rate_label.Text = "网卡名称: [" + netActiveName + "], 下载网速: [" + (networkR.NextValue() / 1024 / 1024).ToString("0.00") + "MB/s]  上传网速: [" + (networkS.NextValue() / 1024 / 1024).ToString("0.00") + "MB/s]  ";
         }
-
-        // 定时判断网络心跳
+        /// <summary>
+        /// 定时判断网络心跳
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void timer2_Tick_1(object sender, EventArgs e)
         {
             // 执行退出操作，弹出登录框，重新选择用户登录
-            Dictionary<string, object> dictionary = new Dictionary<string, object>();
-
-            dictionary.Add("userName", commonRes.getUserName());
-            dictionary.Add("heartInterval", this.timer2.Interval.ToString());
-            dictionary.Add("data", "HAERT_REQUEST");
-            NetServiceContext.sendMessageNotWaiting(5, JsonConvert.SerializeObject(dictionary), this);
+            // Dictionary<string, object> dictionary = new Dictionary<string, object>();
+            // dictionary.Add("userName", commonRes.getUserName());
+            // dictionary.Add("heartInterval", this.timer2.Interval.ToString());
+            // dictionary.Add("data", "HAERT_REQUEST");
+            // NetServiceContext.sendMessageNotWaiting(5, JsonConvert.SerializeObject(dictionary), this);
         }
-
         // 退出登录
         private void exist_button_Click(object sender, EventArgs e)
         {
@@ -274,10 +272,10 @@ namespace chat_service
 
         private void Main_Form_FormClosing(object sender, FormClosingEventArgs e)
         {
-            // 先执行一次上传和下载任务的清空
+            // 清空文件上传和下载列表，即清空还未上传下载和上传下载完成的
             fileUploadClear();
             fileDownloadClear();
-
+            // 
             if (uploadHelper.Count > 0 || downloadHelper.Count > 0)
             {
                 if (MessageBox.Show("当前存在未完成的传输任务,是否强制执行取消", "系统提示", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) == DialogResult.OK)
@@ -293,7 +291,6 @@ namespace chat_service
                             cancleUploadTasks[i] = new Task<bool>(() => closeUploadTask(helper));
                         }
                     }
-
                     if (downloadHelper.Count > 0)
                     {
                         for (int i = 0; i < downloadHelper.Count; i++)
@@ -302,8 +299,7 @@ namespace chat_service
                             cancleDownloadTasks[i] = new Task<bool>(() => closeDownloadTask(helper));
                         }
                     }
-
-                    // 执行任务
+                    // 继续执行任务传输
                     //int result = 0;
                     for (int i = 0; i < cancleUploadTasks.Length; i++)
                     {
@@ -317,16 +313,12 @@ namespace chat_service
                     }
                     Task.WaitAll(cancleUploadTasks);
                     Task.WaitAll(cancleDownloadTasks);
-
                     // 释放静态资源
                     uploadHelper.Clear();
                     downloadHelper.Clear();
-
                     // 执行退出操作，弹出登录框，重新选择用户登录
                     NetServiceContext.logout();
-
                     releaseTaskResource();
-
                 }
                 else
                 {
@@ -337,11 +329,14 @@ namespace chat_service
             {
                 // 执行退出操作，弹出登录框，重新选择用户登录
                 NetServiceContext.logout();
-
                 releaseTaskResource();
             }
         }
-
+        /// <summary>
+        /// 关闭上传任务
+        /// </summary>
+        /// <param name="helper"></param>
+        /// <returns></returns>
         private bool closeUploadTask(AsyncPersonalFileUploadHelper helper)
         {
             if (helper.Bg_Worker.IsBusy)
@@ -361,7 +356,11 @@ namespace chat_service
 
             return false;
         }
-
+        /// <summary>
+        /// 关闭下载任务
+        /// </summary>
+        /// <param name="helper"></param>
+        /// <returns></returns>
         private bool closeDownloadTask(AsyncPersonalFileDownloadHelper helper)
         {
             if (helper.Bg_Worker.IsBusy)
@@ -826,7 +825,6 @@ namespace chat_service
         {
             this.refreshFileRefreshTree(commonRes.getUserName(), commonRes.getUserName(), commonRes.getUserName());
         }
-
         // 鼠标右键点击树中的节点下拉显示节点操作
         private void personal_file_treeView_MouseDown(object sender, MouseEventArgs e)
         {
@@ -874,7 +872,6 @@ namespace chat_service
             }
 
         }
-
         // 添加文件夹
         private void toolStripMenuItem1_Click(object sender, EventArgs e)
         {
@@ -885,7 +882,6 @@ namespace chat_service
                 file_Create_Form.ShowDialog();
             }
         }
-
         // 删除文件夹
         private void toolStripMenuItem2_Click(object sender, EventArgs e)
         {
@@ -898,7 +894,6 @@ namespace chat_service
                 }
             }
         }
-
         // 修改文件夹
         private void toolStripMenuItem3_Click(object sender, EventArgs e)
         {
@@ -910,22 +905,99 @@ namespace chat_service
             }
         }
 
-        // 上传文件
+        /// <summary>
+        /// 右键目录树中的某个一目录，选择上传文件
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void toolStripMenuItem4_Click(object sender, EventArgs e)
         {
             if (currentSelectedNode != null)
             {
+                // 初始话文件上传对话框, 选择选择文件
                 this.initOpenFileDialog();
+                // 初始化当前文件上传进度条
                 this.initProgressBar();
+                // 获取目录树上的数据节点，节点的数据组成也是FileDto，如果当前目录存在二级目录，提示用户选择最子目录进行上传
                 FileDto fileDto = (FileDto)currentSelectedNode.Tag;
                 if (fileDto.getHasChild() == "Y")
                 {
                     MessageBox.Show("当前目录 [ " + fileDto.getFilePath() + " ] 存在二级目录无法上传文件，请选择最子目录进行！", "系统提示", MessageBoxButtons.OK, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1, MessageBoxOptions.DefaultDesktopOnly);
                     return;
                 }
+                // 打开文件上传选择框
                 this.sendUploadFileHandler();
             }
         }
+        // 为目录上传文件
+        private void sendUploadFileHandler()
+        {
+            // 打开文件选择弹出框
+            DialogResult result = DialogResult.Cancel;
+            Thread openFileDialogThread = new Thread((ThreadStart)(() => {result = this.openFileDialog.ShowDialog();}));
+            openFileDialogThread.SetApartmentState(ApartmentState.STA); // 设置线程为STA模式，因为文件选择对话框是STA模式的
+            openFileDialogThread.Start();
+            openFileDialogThread.Join();
+
+            // 获取选择结果
+            if (result == DialogResult.OK)
+            {
+                // 获取文件名称展示（支持选择多个文件）
+                string[] safeFileNames = this.openFileDialog.SafeFileNames;
+                string[] files = new string[safeFileNames.Length];
+                if ((files = this.openFileDialog.FileNames).Length > 0)
+                {
+                    int index = 0;
+                    // 已经有记录，则进行追加
+                    if (this.file_upload_list_dataGridView.Rows.Count > 0)
+                    {
+                        index = this.file_upload_list_dataGridView.Rows.Count;
+                        for (int i = 0; i < files.Length; i++)
+                        {
+                            // 增加新的文件到表格
+                            this.file_upload_list_dataGridView.Rows.Add();
+                            this.file_upload_list_dataGridView.Rows[index].Cells[0].Value = index + 1;
+                            this.file_upload_list_dataGridView.Rows[index].Cells[1].Value = safeFileNames[i];
+                            this.file_upload_list_dataGridView.Rows[index].Cells[2].Value = ((FileDto)currentSelectedNode.Tag).getFilePath();
+                            FileStream fileStream = new FileStream(files[i], FileMode.Open, FileAccess.Read, FileShare.Read);
+                            this.file_upload_list_dataGridView.Rows[index].Cells[3].Value = getFileSize(fileStream.Length);
+                            this.file_upload_list_dataGridView.Rows[index].Cells[4].Value = "未上传";
+                            // TAG列, 标识当前我文件  ((FileDto)currentSelectedNode.Tag).getId();
+                            this.file_upload_list_dataGridView.Rows[index].Cells[9].Value = System.Guid.NewGuid().ToString("N");
+                            this.file_upload_list_dataGridView.Rows[index].Cells[11].Value = fileStream;
+                            this.file_upload_list_dataGridView.Rows[index].Cells[13].Value = files[i];
+                            this.file_upload_list_dataGridView.Rows[index].Cells[14].Value = ((FileDto)currentSelectedNode.Tag).getId();
+                            this.file_upload_list_dataGridView.Rows[index].Cells[15].Value = fileStream.Length.ToString();
+                            index = index + 1;
+                        }
+                    }
+                    else
+                    {
+                        for (int i = 0; i < files.Length; i++)
+                        {
+                            this.file_upload_list_dataGridView.Rows.Add();
+                            this.file_upload_list_dataGridView.Rows[index].Cells[0].Value = index + 1;
+                            this.file_upload_list_dataGridView.Rows[index].Cells[1].Value = safeFileNames[i];
+                            this.file_upload_list_dataGridView.Rows[index].Cells[2].Value = ((FileDto)currentSelectedNode.Tag).getFilePath();
+                            FileStream fileStream = new FileStream(files[i], FileMode.Open, FileAccess.Read, FileShare.Read);
+                            this.file_upload_list_dataGridView.Rows[index].Cells[3].Value = getFileSize(fileStream.Length);
+                            this.file_upload_list_dataGridView.Rows[index].Cells[4].Value = "未上传";
+                            // TAG列, 标识当前我文件
+                            this.file_upload_list_dataGridView.Rows[index].Cells[9].Value = System.Guid.NewGuid().ToString("N");
+                            this.file_upload_list_dataGridView.Rows[index].Cells[11].Value = fileStream;
+                            this.file_upload_list_dataGridView.Rows[index].Cells[13].Value = files[i];
+                            this.file_upload_list_dataGridView.Rows[index].Cells[14].Value = ((FileDto)currentSelectedNode.Tag).getId();
+                            this.file_upload_list_dataGridView.Rows[index].Cells[15].Value = fileStream.Length.ToString();
+                            index = index + 1;
+                        }
+                    }
+                }
+
+                // 动态跳转到上传列表tab页
+                this.personal_file_tabPage.SelectedTab = this.personal_file_tabPage.TabPages["tabPage2"];
+            }
+        }
+
 
         // 文件列表点击checkBox列
         private void file_list_dataGridView_CellMouseClick(object sender, DataGridViewCellMouseEventArgs e)
@@ -966,7 +1038,7 @@ namespace chat_service
             string fileName = this.file_list_dataGridView.CurrentRow.Cells[2].Value.ToString();
             string taskStatus = this.file_list_dataGridView.CurrentRow.Cells[6].Value.ToString();
 
-            // 下载(需要判断当前行的文件是否处于下载列表中，处于则不能重复下载)
+            // 点击下载(需要判断当前行的文件是否处于下载列表中，处于则不能重复下载)
             if (CIndex == 7)
             {
                 if (taskStatus == "上传中" || taskStatus == "上传成功")
@@ -1001,7 +1073,7 @@ namespace chat_service
                 this.personal_file_tabPage.SelectedTab = this.personal_file_tabPage.TabPages["tabPage3"];
             }
 
-            // 删除（删除真实文件，但是数据库记录不删除，只是将文件记录的del状态由N变为Y）
+            // 点击删除（删除真实文件，但是数据库记录不删除，只是将文件记录的del状态由N变为Y）
             if (CIndex == 8)
             {
                 if (taskStatus == "删除成功")
@@ -1271,9 +1343,11 @@ namespace chat_service
         }
 
 
-
-
-        // 文件上传列表中点击上传、取消、删除(删除只是删除未上传和上传成功的记录，并不会真正影响文件)
+        /// <summary>
+        /// 文件上传处理
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void file_upload_list_dataGridView_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
             int CIndex = e.ColumnIndex;
@@ -1363,7 +1437,7 @@ namespace chat_service
             }
         }
 
-        // 文件上传列表全选上传
+        // 文件下载列表全选上
         private void file_upload_all_button_Click(object sender, EventArgs e)
         {
             if (this.file_upload_list_dataGridView.Rows.Count == 0)
@@ -1428,101 +1502,6 @@ namespace chat_service
             fileUploadClear();
         }
 
-        private void fileUploadClear()
-        {
-            // 清空条件，清空表格处于未上传或上传完成的内容，同步清空personalFileUploadList集合中任务fileStatus状态处于WellDone的任务
-            if (this.file_upload_list_dataGridView.Rows.Count > 0)
-            {
-                for (int i = 0; i < this.file_upload_list_dataGridView.Rows.Count; i++)
-                {
-                    string tag = this.file_upload_list_dataGridView.Rows[i].Cells[9].Value.ToString();
-                    string taskStatus = this.file_upload_list_dataGridView.Rows[i].Cells[4].Value.ToString();
-                    if (taskStatus == "未上传" || taskStatus == "上传成功")
-                    {
-                        AsyncPersonalFileUploadHelper helper = (AsyncPersonalFileUploadHelper)this.file_upload_list_dataGridView.Rows[i].Cells[10].Value;
-                        Dictionary<string, object> dictionary = (Dictionary<string, object>)this.file_upload_list_dataGridView.Rows[i].Cells[12].Value;
-                        if ((dictionary["fileStatus"].ToString() == "NO_UPLOAD" || dictionary["fileStatus"].ToString() == "WellDone"))
-                        {
-                            this.file_upload_list_dataGridView.Rows.RemoveAt(i);
-                            uploadHelper.Remove(helper);
-                            i--;
-                        }
-                    }
-                }
-            }
-        }
-
-        // 网盘树中点击上传文件传送处理
-        private void sendUploadFileHandler()
-        {
-            // 打开文件选择弹出框
-            DialogResult result = DialogResult.Cancel;
-            Thread openFileDialogThread = new Thread((ThreadStart)(() =>
-            {
-                result = this.openFileDialog.ShowDialog();
-            }));
-            openFileDialogThread.SetApartmentState(ApartmentState.STA);
-            openFileDialogThread.Start();
-            openFileDialogThread.Join();
-
-            // 获取选择结果
-            if (result == DialogResult.OK)
-            {
-                // 获取文件名称展示
-                string[] safeFileNames = this.openFileDialog.SafeFileNames;
-                string[] files = new string[safeFileNames.Length];
-                if ((files = this.openFileDialog.FileNames).Length > 0)
-                {
-                    int index = 0;
-                    // 已经有记录，则进行追加
-                    if (this.file_upload_list_dataGridView.Rows.Count > 0)
-                    {
-                        index = this.file_upload_list_dataGridView.Rows.Count;
-                        for (int i = 0; i < files.Length; i++)
-                        {
-                            this.file_upload_list_dataGridView.Rows.Add();
-                            this.file_upload_list_dataGridView.Rows[index].Cells[0].Value = index + 1;
-                            this.file_upload_list_dataGridView.Rows[index].Cells[1].Value = safeFileNames[i];
-                            this.file_upload_list_dataGridView.Rows[index].Cells[2].Value = ((FileDto)currentSelectedNode.Tag).getFilePath();
-                            FileStream fileStream = new FileStream(files[i], FileMode.Open, FileAccess.Read, FileShare.Read);
-                            this.file_upload_list_dataGridView.Rows[index].Cells[3].Value = getFileSize(fileStream.Length);
-                            this.file_upload_list_dataGridView.Rows[index].Cells[4].Value = "未上传";
-                            // TAG列, 标识当前我文件  ((FileDto)currentSelectedNode.Tag).getId();
-                            this.file_upload_list_dataGridView.Rows[index].Cells[9].Value = System.Guid.NewGuid().ToString("N");
-                            this.file_upload_list_dataGridView.Rows[index].Cells[11].Value = fileStream;
-                            this.file_upload_list_dataGridView.Rows[index].Cells[13].Value = files[i];
-                            this.file_upload_list_dataGridView.Rows[index].Cells[14].Value = ((FileDto)currentSelectedNode.Tag).getId();
-                            this.file_upload_list_dataGridView.Rows[index].Cells[15].Value = fileStream.Length.ToString();
-                            index = index + 1;
-                        }
-                    }
-                    else
-                    {
-                        for (int i = 0; i < files.Length; i++)
-                        {
-                            this.file_upload_list_dataGridView.Rows.Add();
-                            this.file_upload_list_dataGridView.Rows[index].Cells[0].Value = index + 1;
-                            this.file_upload_list_dataGridView.Rows[index].Cells[1].Value = safeFileNames[i];
-                            this.file_upload_list_dataGridView.Rows[index].Cells[2].Value = ((FileDto)currentSelectedNode.Tag).getFilePath();
-                            FileStream fileStream = new FileStream(files[i], FileMode.Open, FileAccess.Read, FileShare.Read);
-                            this.file_upload_list_dataGridView.Rows[index].Cells[3].Value = getFileSize(fileStream.Length);
-                            this.file_upload_list_dataGridView.Rows[index].Cells[4].Value = "未上传";
-                            // TAG列, 标识当前我文件
-                            this.file_upload_list_dataGridView.Rows[index].Cells[9].Value = System.Guid.NewGuid().ToString("N");
-                            this.file_upload_list_dataGridView.Rows[index].Cells[11].Value = fileStream;
-                            this.file_upload_list_dataGridView.Rows[index].Cells[13].Value = files[i];
-                            this.file_upload_list_dataGridView.Rows[index].Cells[14].Value = ((FileDto)currentSelectedNode.Tag).getId();
-                            this.file_upload_list_dataGridView.Rows[index].Cells[15].Value = fileStream.Length.ToString();
-                            index = index + 1;
-                        }
-                    }
-                }
-
-                // 动态跳转到上传列表tab页
-                this.personal_file_tabPage.SelectedTab = this.personal_file_tabPage.TabPages["tabPage2"];
-            }
-        }
-
         private string getFileSize(long fileSize)
         {
             // 1GB = 1024MB = 1024 * 1024KB = 1024 * 1024 * 1024B
@@ -1556,14 +1535,18 @@ namespace chat_service
         }
 
 
-        // 文件下载列表中点击下载、取消、删除(删除只是删除未下载和下载成功的记录，并不会真正影响文件)
+        /// <summary>
+        /// 文件列表相关操作（下载、取消、删除等按钮操作）
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void file_download_list_dataGridView_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
             //FolderBrowserDialog
             int CIndex = e.ColumnIndex;
             string tag = this.file_download_list_dataGridView.CurrentRow.Cells[8].Value.ToString();
-            string waitFileName = this.file_download_list_dataGridView.CurrentRow.Cells[1].Value.ToString();
-            string taskStatus = this.file_download_list_dataGridView.CurrentRow.Cells[3].Value.ToString();
+            string waitFileName = this.file_download_list_dataGridView.CurrentRow.Cells[1].Value.ToString(); // 待上传的文件名
+            string taskStatus = this.file_download_list_dataGridView.CurrentRow.Cells[3].Value.ToString(); // 当前文件对应的状态
 
             // 下载
             if (CIndex == 5)
@@ -1705,6 +1688,35 @@ namespace chat_service
             fileDownloadClear();
         }
 
+        /// <summary>
+        /// 文件上传列表全部清空，清空还未上传和上传完成的
+        /// </summary>
+        private void fileUploadClear()
+        {
+            // 清空条件，清空表格处于未上传或上传完成的内容，同步清空personalFileUploadList集合中任务fileStatus状态处于WellDone的任务
+            if (this.file_upload_list_dataGridView.Rows.Count > 0)
+            {
+                for (int i = 0; i < this.file_upload_list_dataGridView.Rows.Count; i++)
+                {
+                    string tag = this.file_upload_list_dataGridView.Rows[i].Cells[9].Value.ToString();
+                    string taskStatus = this.file_upload_list_dataGridView.Rows[i].Cells[4].Value.ToString();
+                    if (taskStatus == "未上传" || taskStatus == "上传成功")
+                    {
+                        AsyncPersonalFileUploadHelper helper = (AsyncPersonalFileUploadHelper)this.file_upload_list_dataGridView.Rows[i].Cells[10].Value;
+                        Dictionary<string, object> dictionary = (Dictionary<string, object>)this.file_upload_list_dataGridView.Rows[i].Cells[12].Value;
+                        if ((dictionary["fileStatus"].ToString() == "NO_UPLOAD" || dictionary["fileStatus"].ToString() == "WellDone"))
+                        {
+                            this.file_upload_list_dataGridView.Rows.RemoveAt(i);
+                            uploadHelper.Remove(helper);
+                            i--;
+                        }
+                    }
+                }
+            }
+        }
+        /// <summary>
+        /// 文件下载列表全部清空，清空还未下载和下载完成的
+        /// </summary>
         private void fileDownloadClear()
         {
             if (this.file_download_list_dataGridView.Rows.Count > 0)
@@ -1753,11 +1765,6 @@ namespace chat_service
                 global_download_path_label.Text = "当前下载路径: " + NetServiceContext.globalDownloadPath;
             }
         }
-
-
-
-
-
         private void refreshFileRefreshTree(string fileName, string filePath, string userName)
         {
             // 获取个人网盘文件夹
