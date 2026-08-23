@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -8,7 +8,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
-using Newtonsoft.Json.Linq;
 using System.Windows.Forms;
 using chat_service.user;
 using Newtonsoft.Json;
@@ -19,12 +18,10 @@ using System.Runtime.Serialization.Json;
 using System.IO;
 using System.Runtime.Remoting.Messaging;
 using chat_service.frame;
+using System.Threading;
 
 namespace chat_service
 {
-    /// <summary>
-    /// 注册窗体
-    /// </summary>
     public partial class Register_Form : Form
     {
         private static string userName = "", password = "";
@@ -33,11 +30,8 @@ namespace chat_service
 
         // 注册处理委托
         public delegate NetResponse RegisterHandler(NetResponse netResponse);
-        /// <summary>
-        /// 注册处理方法
-        /// </summary>
-        /// <param name="netResponse"></param>
-        /// <returns></returns>
+
+        // 委托方法
         public static NetResponse Register(NetResponse netResponse)
         {
             if (!netResponse.getResponse().Equals(NetResponse.Response.SUCCESS))
@@ -55,37 +49,85 @@ namespace chat_service
         public Register_Form()
         {
             InitializeComponent();
+
             register_Form = this;
         }
-        /// <summary>
-        /// 注册逻辑
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
+        
+        // 注册
         private void login_button_Click(object sender, EventArgs e)
         {
-            if (userName_textBox.Text == "") { MessageBox.Show("用户名不能为空"); return;}
-            if (password_textBox.Text == "") { MessageBox.Show("密码不能为空"); return;}
-            if (phone_textBox.Text == "") { MessageBox.Show("联系方式不能为空"); return; }
-            if (mail_textBox.Text == "") { MessageBox.Show("邮箱不能为空"); return; }
-            // 远程连接以及注册用户
-            UserModel userDto = new UserModel(userName, password, phone_textBox.Text, mail_textBox.Text);
-            NetServiceContext.register(userDto);
+            if (userName_textBox.Text == "")
+            {
+                MessageBox.Show("用户名不能为空");
+                return;
+            }
+
+            if (password_textBox.Text == "")
+            {
+                MessageBox.Show("密码不能为空");
+                return;
+            }
+
+            if (phone_textBox.Text == "")
+            {
+                MessageBox.Show("联系方式不能为空");
+                return;
+            }
+
+            if (mail_textBox.Text == "")
+            {
+                MessageBox.Show("邮箱不能为空");
+                return;
+            }
+
+            userName = userName_textBox.Text;
+            password = password_textBox.Text;
+
+            // 使用新协议注册（0x30 userRegisterReq -> 0x34 userResponse）
+            Thread regThread = new Thread(() =>
+            {
+                try
+                {
+                    // 确保主控连接已建立
+                    if (!chat_service.protocol.SocketManager.Shared.IsConnected)
+                    {
+                        string[] address = NetServiceContext.remoteServiceAddress.Split(':');
+                        chat_service.protocol.SocketManager.Shared.Connect(address[0], Convert.ToInt32(address[1]));
+                    }
+
+                    chat_service.protocol.UserDO user = chat_service.protocol.AuthenticationService.Shared
+                        .Register(userName_textBox.Text, password_textBox.Text, mail_textBox.Text);
+
+                    this.BeginInvoke(new MethodInvoker(delegate ()
+                    {
+                        // 注册成功后关闭当前注册窗口，无需重复调用登录（服务端已认证）
+                        MessageBox.Show("用户名：[ " + userName + " ] 注册成功");
+                        this.Close();
+                    }));
+                }
+                catch (Exception ex)
+                {
+                    this.BeginInvoke(new MethodInvoker(delegate ()
+                    {
+                        MessageBox.Show("注册失败: " + ex.Message);
+                    }));
+                }
+            });
+            regThread.IsBackground = true;
+            regThread.Start();
         }
 
         // --> *********************************************** 委托调用 ********************************************
 
-        // 注册结果委托代理调用，当发送注册命令后服务端处理完成返回时调用
+        // 注册代理调用
         public static void registerDelegateHandler(object obj, NetResponse netResponse)
         {
             Login_Register_Form login_Register_Form = (Login_Register_Form)obj;
             RegisterHandler registerHandler = new RegisterHandler(Register);
             registerHandler.BeginInvoke(netResponse, new AsyncCallback(registerAsyncHandler), obj);
         }
-        /// <summary>
-        /// 注册成功后回调
-        /// </summary>
-        /// <param name="result"></param>
+
+        // 注册成功后回调
         public static void registerAsyncHandler(IAsyncResult result)
         {
             RegisterHandler registerHandler = (RegisterHandler)((AsyncResult)result).AsyncDelegate;
@@ -99,19 +141,24 @@ namespace chat_service
                     MessageBox.Show(netResponse.getResult());
                     return;
                 }
-                Login_Register_Form login_Register_Form = (Login_Register_Form)result.AsyncState;
+
+                Login_Register_Form login_Register_Form = (Login_Register_Form) result.AsyncState;
+
                 // 回填成功注册的用户名
                 login_Register_Form.userName_textBox.Invoke(new MethodInvoker(delegate ()
                 {
                     login_Register_Form.userName_textBox.Text = userName;
                 }));
+
                 // 回填成功注册的密码
                 login_Register_Form.password_textBox.Invoke(new MethodInvoker(delegate ()
                 {
                     login_Register_Form.password_textBox.Text = password;
                 }));
+
                 // 弹窗提示注册成功
                 MessageBox.Show("用户名：[ " + userName + " ] " + netResponse.getResult());
+
                 // 关闭注册窗口
                 register_Form.Invoke(new MethodInvoker(delegate ()
                 {

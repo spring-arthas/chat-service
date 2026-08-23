@@ -1,4 +1,5 @@
-﻿using chat_service.file;
+using chat_service.file;
+using chat_service.protocol;
 using chat_service.util;
 using Newtonsoft.Json;
 using System;
@@ -45,17 +46,34 @@ namespace chat_service
                 return;
             }
 
-            if (this.operate == "CREATE")
+            if (this.selectTreeNode == null || !(this.selectTreeNode.Tag is NetFileDto))
             {
-                long parentId = ((FileDto)this.selectTreeNode.Tag).getId();
-                string dirName = this.new_file_textBox.Text.Trim();
-                NetServiceContext.createDirectory(parentId, dirName);
+                MessageBox.Show("请先选择父目录节点！");
+                return;
             }
-            else if (this.operate == "UPDATE")
+
+            NetFileDto parent = (NetFileDto)this.selectTreeNode.Tag;
+
+            try
             {
-                long dirId = ((FileDto)this.selectTreeNode.Tag).getId();
-                string newName = this.new_file_textBox.Text.Trim();
-                NetServiceContext.updateDirectory(dirId, newName);
+                if (this.operate == "CREATE")
+                {
+                    // 使用新协议创建目录 (0x10 dirCreateReq, 参数 pId + dirName)
+                    DirectoryService.Shared.CreateDirectory(parent.Id, this.new_file_textBox.Text.Trim());
+                    this.DialogResult = DialogResult.OK;
+                    this.Close();
+                }
+                else if (this.operate == "UPDATE")
+                {
+                    // 使用新协议重命名目录 (0x12 dirUpdateReq, 参数 id + dirName)
+                    DirectoryService.Shared.RenameDirectory(parent.Id, this.new_file_textBox.Text.Trim());
+                    this.DialogResult = DialogResult.OK;
+                    this.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("操作失败: " + ex.Message, "系统提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
     }

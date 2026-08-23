@@ -1,4 +1,4 @@
-﻿namespace chat_service
+namespace chat_service
 {
     partial class Setting_Form
     {

@@ -1,18 +1,23 @@
 # Visual Studio
 .vs/
-bin/
-obj/
+[Bb]in/
+[Oo]bj/
+.obj/
 *.user
 *.suo
 *.userosscache
 *.sln.docstates
 
-# Windows image file caches
+# NuGet package cache
+packages/
+*.nupkg
+
+# Local runtime configuration and logs
+chat-service/client.xml
+*.log
+
+# Windows generated files
 Thumbs.db
 ehthumbs.db
-
-# Folder config file
 Desktop.ini
-
-# Recycle Bin used on file shares
 $RECYCLE.BIN/

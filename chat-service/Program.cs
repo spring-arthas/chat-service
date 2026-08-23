@@ -1,4 +1,5 @@
-﻿using chat_service.net;
+using chat_service.net;
+using chat_service.protocol;
 using chat_service.service.file;
 using chat_service.util;
 using System;
@@ -28,24 +29,22 @@ namespace chat_service
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             
-            // 1. 加载配置文件
+            // 加载配置文件
             loadNetClient();
 
-            // 2. 实例化登录窗口, 即应用启动的主窗口
+            // 实例化登录窗口
             login_Register_Form = new Login_Register_Form();
 
             // 委托建立连接
             delegateCreateConnection();
 
-            // 3. 开启登录窗口
+            // 开启登录窗口
             Application.Run(login_Register_Form);
 
             //Application.Run(new Test());
 
         }
-        /// <summary>
-        /// 加载配置文件
-        /// </summary>
+
         private static void loadNetClient()
         {
             // 加载配置文件
@@ -68,29 +67,30 @@ namespace chat_service
             NetServiceContext.globalDownloadPath = XmlConfigUtils.GetValue("globalDownloadPath");
         }
 
-        /// <summary>
-        /// 委托代理执行客户端连接创建，只需要一个构建一个socket连接即可，用于文本传输场景，对于文件类型操作会重新新建连接进行处理
-        /// </summary>
         public static void delegateCreateConnection()
         {
-            // 构建委托delegete对象，其中入参就是代理需要执行的逻辑
             rc = new RemoteConntect(beginRemoteConnect);
             AsyncCallback callback = new AsyncCallback(AsyncCallbackImpl);
-            // rc代理对象执行异步代理逻辑，处理结果通过AsyncCallback异步进行结果回调
             rc.BeginInvoke(callback, null);
         }
 
-        /// <summary>
-        /// 建立连接
-        /// </summary>
+        // 建立连接(只建立聊天连接)
         private static NetResponse beginRemoteConnect()
         {
-            return NetServiceContext.chatInitSocketAndConnect();
+            // 使用新协议 SocketManager 建立主控连接
+            try
+            {
+                string[] address = NetServiceContext.remoteServiceAddress.Split(':');
+                chat_service.protocol.SocketManager.Shared.Connect(address[0], Convert.ToInt32(address[1]));
+                return NetResponse.ofConnectionSuccess("与服务器连接成功 [" + NetServiceContext.remoteServiceAddress + "]");
+            }
+            catch (Exception e)
+            {
+                return NetResponse.ofConnectFail("尝试与服务端连接异常: " + e.Message);
+            }
         }
 
-        /// <summary>
-        /// 异步回调结果
-        /// </summary>
+        // 异步回调结果
         private static void AsyncCallbackImpl(IAsyncResult ar)
         {
             // 获取建立连接结果
@@ -100,16 +100,19 @@ namespace chat_service
                 
                 if (netResponse.getResponse().Equals(NetResponse.Response.CONNECTION_SUCCESS))
                 {
-                    // 设置用户名用于下次登录默认代入
+
+                    // 设置用户名
                     login_Register_Form.userName_textBox.Invoke(new MethodInvoker(delegate () { login_Register_Form.userName_textBox.Text = XmlConfigUtils.GetValue("userName");}));
-                    // 设置密码用于下次登录默认代入
-                    login_Register_Form.password_textBox.Invoke(new MethodInvoker(delegate () { login_Register_Form.password_textBox.Text = XmlConfigUtils.GetValue("password"); }));
-                    // 设置连接信息，即socket连接结果信息
+                    
+                    // 设置密码
+                    login_Register_Form.password_textBox.Invoke(new MethodInvoker(delegate () { login_Register_Form.password_textBox.Text = XmlConfigUtils.GetValue("password");}));
+
+                    // 设置连接信息
                     login_Register_Form.connect_label.Invoke(new MethodInvoker(delegate () { login_Register_Form.connect_label.Visible = true; login_Register_Form.connect_label.ForeColor = Color.Green; login_Register_Form.connect_label.Text = netResponse.getResult();}));
-                    // 异步线程开始监听服务端回传数据，无限循环读取数据
-                    receiveThread = new Thread(threadLoop);
-                    receiveThread.IsBackground = true; // 设置为后台程序
-                    receiveThread.Start();
+
+                    // 注意：新协议 SocketManager.Connect() 内部已启动接收线程，
+                    // 此处不再启动旧的 NetServiceContext.loopReceiveServiceData，
+                    // 避免两个线程同时读取同一 socket 导致数据错乱。
                 }
                 else
                 {
@@ -129,7 +132,7 @@ namespace chat_service
         // 初始化线程
         private static void threadLoop()
         {
-            NetServiceContext.receiveResponse(login_Register_Form);
+            NetServiceContext.loopReceiveServiceData(login_Register_Form);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -60,30 +60,8 @@ namespace chat_service
             // 2、更新应用内存内用于socket连接的服务地址
             NetServiceContext.remoteServiceAddress = Remote_Server_textBox.Text;
 
-            // 3、关闭正处于连接的socket
-            // 由于接收线程采用同步阻塞方式调用，且socket.Receive方法为不可中断方法，所以对线程的终止无法触发，此时直接关闭客户端socket连接
-            if (null != NetServiceContext.socket)
-            {
-                // 如果连接状态依旧保持，则isSocketConnected()方法不会抛出异常
-                try
-                {
-                    NetServiceContext.isSocketConnected(NetServiceContext.socket);
-                    NetServiceContext.socket.Shutdown(SocketShutdown.Both);
-                    NetServiceContext.socket.Close();
-                    NetServiceContext.socket = null;
-                }
-                catch (SocketException ex)
-                {
-                    // 代码 10035也保证socket连接状态正常
-                    if (ex.NativeErrorCode.Equals(10035))
-                    {
-                        NetServiceContext.socket.Shutdown(SocketShutdown.Both);
-                        NetServiceContext.socket.Close();
-                        NetServiceContext.socket = null;
-                    }
-                }
-
-            }
+            // 3、断开当前新协议的 socket 连接
+            chat_service.protocol.SocketManager.Shared.Disconnect();
 
             // 4、重启建立新的连接
             Program.delegateCreateConnection();

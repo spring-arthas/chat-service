@@ -41,7 +41,7 @@ namespace chat_service.file
         private string del;
 
         [DataMember]
-        private string gmtCreated;
+        private string gmtCreate;
 
         [DataMember]
         private string gmtModified;
@@ -50,28 +50,13 @@ namespace chat_service.file
         private string delTime;
 
         [DataMember]
-        private long userId;
-
-
-
-        // 额外字段信息
-        [DataMember]
         private List<FileDto> childFileList;
+
         [DataMember]
         private string repeatCreate;
 
         [DataMember]
         private long fileCount;
-
-        public long getUserId()
-        {
-            return this.userId;
-        }
-
-        public void setUserId(long userId)
-        {
-            this.userId = userId;
-        }
 
         public long getFileCount()
         {
@@ -185,12 +170,12 @@ namespace chat_service.file
 
         public string getGmtCreate()
         {
-            return this.gmtCreated;
+            return this.gmtCreate;
         }
 
         public void setGmtCreate(string gmtCreate)
         {
-            this.gmtCreated = gmtCreate;
+            this.gmtCreate = gmtCreate;
         }
 
         public string getGmtModified()

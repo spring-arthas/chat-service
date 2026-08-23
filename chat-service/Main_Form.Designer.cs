@@ -1,4 +1,4 @@
-﻿namespace chat_service
+namespace chat_service
 {
     partial class Main_Form
     {
@@ -263,7 +263,7 @@
             // 
             this.result_label.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.result_label.AutoSize = true;
-            this.result_label.Font = new System.Drawing.Font("宋体", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.result_label.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.result_label.Location = new System.Drawing.Point(1503, 917);
             this.result_label.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.result_label.Name = "result_label";
@@ -276,7 +276,7 @@
             // remote_address_textBox
             // 
             this.remote_address_textBox.Enabled = false;
-            this.remote_address_textBox.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.remote_address_textBox.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.remote_address_textBox.Location = new System.Drawing.Point(95, 12);
             this.remote_address_textBox.Name = "remote_address_textBox";
             this.remote_address_textBox.Size = new System.Drawing.Size(193, 29);
@@ -285,7 +285,7 @@
             // remote_address_label
             // 
             this.remote_address_label.AutoSize = true;
-            this.remote_address_label.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.remote_address_label.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.remote_address_label.Location = new System.Drawing.Point(6, 15);
             this.remote_address_label.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.remote_address_label.Name = "remote_address_label";
@@ -296,8 +296,8 @@
             // user_label
             // 
             this.user_label.AutoSize = true;
-            this.user_label.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.user_label.ForeColor = System.Drawing.Color.Orange;
+            this.user_label.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.user_label.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(48)))), ((int)(((byte)(49)))), ((int)(((byte)(51)))));
             this.user_label.Location = new System.Drawing.Point(405, 22);
             this.user_label.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.user_label.Name = "user_label";
@@ -307,7 +307,7 @@
             // 
             // exist_button
             // 
-            this.exist_button.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.exist_button.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.exist_button.Location = new System.Drawing.Point(305, 11);
             this.exist_button.Name = "exist_button";
             this.exist_button.Size = new System.Drawing.Size(89, 36);
@@ -322,7 +322,7 @@
             this.user_list_dataGridView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.user_list_dataGridView.BackgroundColor = System.Drawing.Color.Cornsilk;
+            this.user_list_dataGridView.BackgroundColor = System.Drawing.Color.White;
             this.user_list_dataGridView.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.user_list_dataGridView.ColumnHeadersHeight = 40;
             this.user_list_dataGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
@@ -339,9 +339,9 @@
             this.user_list_dataGridView.ReadOnly = true;
             this.user_list_dataGridView.RowHeadersWidth = 60;
             dataGridViewCellStyle42.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle42.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            dataGridViewCellStyle42.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.user_list_dataGridView.RowsDefaultCellStyle = dataGridViewCellStyle42;
-            this.user_list_dataGridView.RowTemplate.DefaultCellStyle.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.user_list_dataGridView.RowTemplate.DefaultCellStyle.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.user_list_dataGridView.RowTemplate.Height = 30;
             this.user_list_dataGridView.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.user_list_dataGridView.Size = new System.Drawing.Size(1061, 344);
@@ -431,7 +431,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.main_tabControl.Controls.Add(this.chat_tabPage);
             this.main_tabControl.Controls.Add(this.file_tabPage);
-            this.main_tabControl.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.main_tabControl.Font = new System.Drawing.Font("微软雅黑", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.main_tabControl.Location = new System.Drawing.Point(4, 51);
             this.main_tabControl.Name = "main_tabControl";
             this.main_tabControl.SelectedIndex = 0;
@@ -469,11 +469,12 @@
             this.chat_tabPage.Size = new System.Drawing.Size(1624, 831);
             this.chat_tabPage.TabIndex = 0;
             this.chat_tabPage.Text = "聊天室";
-            this.chat_tabPage.UseVisualStyleBackColor = true;
+            this.chat_tabPage.BackColor = System.Drawing.Color.White;
+            this.chat_tabPage.UseVisualStyleBackColor = false;
             // 
             // add_user_button
             // 
-            this.add_user_button.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.add_user_button.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.add_user_button.Location = new System.Drawing.Point(392, 16);
             this.add_user_button.Name = "add_user_button";
             this.add_user_button.Size = new System.Drawing.Size(96, 32);
@@ -485,7 +486,7 @@
             // all_task_stop_button
             // 
             this.all_task_stop_button.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.all_task_stop_button.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.all_task_stop_button.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.all_task_stop_button.Location = new System.Drawing.Point(1019, 434);
             this.all_task_stop_button.Name = "all_task_stop_button";
             this.all_task_stop_button.Size = new System.Drawing.Size(96, 32);
@@ -498,7 +499,7 @@
             // all_task_begin_button
             // 
             this.all_task_begin_button.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.all_task_begin_button.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.all_task_begin_button.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.all_task_begin_button.Location = new System.Drawing.Point(1121, 434);
             this.all_task_begin_button.Name = "all_task_begin_button";
             this.all_task_begin_button.Size = new System.Drawing.Size(96, 32);
@@ -511,8 +512,8 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.label1.ForeColor = System.Drawing.Color.Green;
+            this.label1.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.label1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(48)))), ((int)(((byte)(49)))), ((int)(((byte)(51)))));
             this.label1.Location = new System.Drawing.Point(7, 56);
             this.label1.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.label1.Name = "label1";
@@ -524,8 +525,8 @@
             // waiting_task_label
             // 
             this.waiting_task_label.AutoSize = true;
-            this.waiting_task_label.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.waiting_task_label.ForeColor = System.Drawing.Color.Green;
+            this.waiting_task_label.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.waiting_task_label.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(48)))), ((int)(((byte)(49)))), ((int)(((byte)(51)))));
             this.waiting_task_label.Location = new System.Drawing.Point(6, 439);
             this.waiting_task_label.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.waiting_task_label.Name = "waiting_task_label";
@@ -541,7 +542,7 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.task_list_dataGridView.AutoSizeRowsMode = System.Windows.Forms.DataGridViewAutoSizeRowsMode.AllCells;
-            this.task_list_dataGridView.BackgroundColor = System.Drawing.Color.Cornsilk;
+            this.task_list_dataGridView.BackgroundColor = System.Drawing.Color.White;
             this.task_list_dataGridView.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.task_list_dataGridView.ColumnHeadersHeight = 40;
             this.task_list_dataGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
@@ -561,7 +562,7 @@
             this.接收用户});
             dataGridViewCellStyle54.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle54.BackColor = System.Drawing.SystemColors.Window;
-            dataGridViewCellStyle54.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            dataGridViewCellStyle54.Font = new System.Drawing.Font("微软雅黑", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             dataGridViewCellStyle54.ForeColor = System.Drawing.SystemColors.ControlText;
             dataGridViewCellStyle54.SelectionBackColor = System.Drawing.SystemColors.Highlight;
             dataGridViewCellStyle54.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
@@ -574,9 +575,9 @@
             this.task_list_dataGridView.ReadOnly = true;
             this.task_list_dataGridView.RowHeadersWidth = 60;
             dataGridViewCellStyle55.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle55.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            dataGridViewCellStyle55.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.task_list_dataGridView.RowsDefaultCellStyle = dataGridViewCellStyle55;
-            this.task_list_dataGridView.RowTemplate.DefaultCellStyle.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.task_list_dataGridView.RowTemplate.DefaultCellStyle.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.task_list_dataGridView.RowTemplate.Height = 30;
             this.task_list_dataGridView.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.task_list_dataGridView.Size = new System.Drawing.Size(1211, 200);
@@ -702,7 +703,7 @@
             // 
             // query_user_button
             // 
-            this.query_user_button.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.query_user_button.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.query_user_button.Location = new System.Drawing.Point(205, 16);
             this.query_user_button.Name = "query_user_button";
             this.query_user_button.Size = new System.Drawing.Size(89, 32);
@@ -713,7 +714,7 @@
             // 
             // query_user_textBox
             // 
-            this.query_user_textBox.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.query_user_textBox.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.query_user_textBox.Location = new System.Drawing.Point(6, 18);
             this.query_user_textBox.Name = "query_user_textBox";
             this.query_user_textBox.Size = new System.Drawing.Size(193, 29);
@@ -723,7 +724,7 @@
             // 
             this.upload_size_textBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.upload_size_textBox.Enabled = false;
-            this.upload_size_textBox.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.upload_size_textBox.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.upload_size_textBox.Location = new System.Drawing.Point(1273, 729);
             this.upload_size_textBox.Name = "upload_size_textBox";
             this.upload_size_textBox.Size = new System.Drawing.Size(345, 29);
@@ -734,7 +735,7 @@
             // 
             this.upload_size_label.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.upload_size_label.AutoSize = true;
-            this.upload_size_label.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.upload_size_label.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.upload_size_label.Location = new System.Drawing.Point(1161, 737);
             this.upload_size_label.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.upload_size_label.Name = "upload_size_label";
@@ -747,7 +748,7 @@
             // 
             this.upload_path_textBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.upload_path_textBox.Enabled = false;
-            this.upload_path_textBox.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.upload_path_textBox.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.upload_path_textBox.Location = new System.Drawing.Point(1273, 691);
             this.upload_path_textBox.Name = "upload_path_textBox";
             this.upload_path_textBox.Size = new System.Drawing.Size(345, 29);
@@ -758,7 +759,7 @@
             // 
             this.upload_path_label.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.upload_path_label.AutoSize = true;
-            this.upload_path_label.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.upload_path_label.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.upload_path_label.Location = new System.Drawing.Point(1177, 699);
             this.upload_path_label.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.upload_path_label.Name = "upload_path_label";
@@ -771,7 +772,7 @@
             // 
             this.upload_waiting_label.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.upload_waiting_label.AutoSize = true;
-            this.upload_waiting_label.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.upload_waiting_label.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.upload_waiting_label.Location = new System.Drawing.Point(1162, 774);
             this.upload_waiting_label.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.upload_waiting_label.Name = "upload_waiting_label";
@@ -784,7 +785,7 @@
             // 
             this.upload_progress_label.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.upload_progress_label.AutoSize = true;
-            this.upload_progress_label.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.upload_progress_label.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.upload_progress_label.Location = new System.Drawing.Point(1533, 802);
             this.upload_progress_label.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.upload_progress_label.Name = "upload_progress_label";
@@ -804,7 +805,7 @@
             // 
             // refresh_button
             // 
-            this.refresh_button.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.refresh_button.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.refresh_button.Location = new System.Drawing.Point(297, 16);
             this.refresh_button.Name = "refresh_button";
             this.refresh_button.Size = new System.Drawing.Size(89, 32);
@@ -817,8 +818,8 @@
             // 
             this.receive_form_label.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.receive_form_label.AutoSize = true;
-            this.receive_form_label.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.receive_form_label.ForeColor = System.Drawing.Color.Green;
+            this.receive_form_label.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.receive_form_label.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(48)))), ((int)(((byte)(49)))), ((int)(((byte)(51)))));
             this.receive_form_label.Location = new System.Drawing.Point(1381, 54);
             this.receive_form_label.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.receive_form_label.Name = "receive_form_label";
@@ -830,7 +831,7 @@
             // send_button
             // 
             this.send_button.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.send_button.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.send_button.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.send_button.Location = new System.Drawing.Point(1070, 678);
             this.send_button.Name = "send_button";
             this.send_button.Size = new System.Drawing.Size(89, 32);
@@ -838,13 +839,12 @@
             this.send_button.Text = "发送";
             this.send_button.UseVisualStyleBackColor = true;
             this.send_button.Click += new System.EventHandler(this.send_button_Click);
-            // 
             // chat_with_user_label
             // 
             this.chat_with_user_label.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.chat_with_user_label.AutoSize = true;
-            this.chat_with_user_label.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.chat_with_user_label.ForeColor = System.Drawing.Color.Green;
+            this.chat_with_user_label.Font = new System.Drawing.Font("微软雅黑", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.chat_with_user_label.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(48)))), ((int)(((byte)(49)))), ((int)(((byte)(51)))));
             this.chat_with_user_label.Location = new System.Drawing.Point(3, 687);
             this.chat_with_user_label.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.chat_with_user_label.Name = "chat_with_user_label";
@@ -866,13 +866,14 @@
             this.file_tabPage.Size = new System.Drawing.Size(1624, 831);
             this.file_tabPage.TabIndex = 1;
             this.file_tabPage.Text = "个人网盘";
-            this.file_tabPage.UseVisualStyleBackColor = true;
+            this.file_tabPage.BackColor = System.Drawing.Color.White;
+            this.file_tabPage.UseVisualStyleBackColor = false;
             // 
             // global_download_path_label
             // 
             this.global_download_path_label.AutoSize = true;
-            this.global_download_path_label.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.global_download_path_label.ForeColor = System.Drawing.Color.Orange;
+            this.global_download_path_label.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.global_download_path_label.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(230)))), ((int)(((byte)(162)))), ((int)(((byte)(60)))));
             this.global_download_path_label.Location = new System.Drawing.Point(108, 18);
             this.global_download_path_label.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.global_download_path_label.Name = "global_download_path_label";
@@ -913,11 +914,12 @@
             this.tabPage1.Size = new System.Drawing.Size(1335, 721);
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "文件信息";
-            this.tabPage1.UseVisualStyleBackColor = true;
+            this.tabPage1.BackColor = System.Drawing.Color.White;
+            this.tabPage1.UseVisualStyleBackColor = false;
             // 
             // all_file_refresh_button
             // 
-            this.all_file_refresh_button.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.all_file_refresh_button.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.all_file_refresh_button.Location = new System.Drawing.Point(412, 201);
             this.all_file_refresh_button.Name = "all_file_refresh_button";
             this.all_file_refresh_button.Size = new System.Drawing.Size(96, 36);
@@ -928,7 +930,7 @@
             // 
             // all_cancel_select_button
             // 
-            this.all_cancel_select_button.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.all_cancel_select_button.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.all_cancel_select_button.Location = new System.Drawing.Point(106, 201);
             this.all_cancel_select_button.Name = "all_cancel_select_button";
             this.all_cancel_select_button.Size = new System.Drawing.Size(96, 36);
@@ -939,7 +941,7 @@
             // 
             // all_select_button
             // 
-            this.all_select_button.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.all_select_button.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.all_select_button.Location = new System.Drawing.Point(4, 201);
             this.all_select_button.Name = "all_select_button";
             this.all_select_button.Size = new System.Drawing.Size(96, 36);
@@ -950,7 +952,7 @@
             // 
             // all_select_delete_button
             // 
-            this.all_select_delete_button.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.all_select_delete_button.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.all_select_delete_button.Location = new System.Drawing.Point(310, 201);
             this.all_select_delete_button.Name = "all_select_delete_button";
             this.all_select_delete_button.Size = new System.Drawing.Size(96, 36);
@@ -961,7 +963,7 @@
             // 
             // all_select_download_button
             // 
-            this.all_select_download_button.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.all_select_download_button.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.all_select_download_button.Location = new System.Drawing.Point(208, 201);
             this.all_select_download_button.Name = "all_select_download_button";
             this.all_select_download_button.Size = new System.Drawing.Size(96, 36);
@@ -982,14 +984,16 @@
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Size = new System.Drawing.Size(570, 185);
             this.groupBox1.TabIndex = 27;
+            this.groupBox1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.groupBox1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(158)))), ((int)(((byte)(255)))));
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "文件夹信息";
             // 
             // file_sum_count_label
             // 
             this.file_sum_count_label.AutoSize = true;
-            this.file_sum_count_label.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.file_sum_count_label.ForeColor = System.Drawing.Color.Orange;
+            this.file_sum_count_label.Font = new System.Drawing.Font("微软雅黑", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.file_sum_count_label.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(230)))), ((int)(((byte)(162)))), ((int)(((byte)(60)))));
             this.file_sum_count_label.Location = new System.Drawing.Point(106, 102);
             this.file_sum_count_label.Name = "file_sum_count_label";
             this.file_sum_count_label.Size = new System.Drawing.Size(72, 16);
@@ -1000,8 +1004,8 @@
             // label6
             // 
             this.label6.AutoSize = true;
-            this.label6.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.label6.ForeColor = System.Drawing.Color.Orange;
+            this.label6.Font = new System.Drawing.Font("微软雅黑", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.label6.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(144)))), ((int)(((byte)(147)))), ((int)(((byte)(153)))));
             this.label6.Location = new System.Drawing.Point(6, 102);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(88, 16);
@@ -1011,8 +1015,8 @@
             // folder_create_path_label
             // 
             this.folder_create_path_label.AutoSize = true;
-            this.folder_create_path_label.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.folder_create_path_label.ForeColor = System.Drawing.Color.Orange;
+            this.folder_create_path_label.Font = new System.Drawing.Font("微软雅黑", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.folder_create_path_label.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(230)))), ((int)(((byte)(162)))), ((int)(((byte)(60)))));
             this.folder_create_path_label.Location = new System.Drawing.Point(106, 69);
             this.folder_create_path_label.Name = "folder_create_path_label";
             this.folder_create_path_label.Size = new System.Drawing.Size(72, 16);
@@ -1023,8 +1027,8 @@
             // folder_create_time_label
             // 
             this.folder_create_time_label.AutoSize = true;
-            this.folder_create_time_label.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.folder_create_time_label.ForeColor = System.Drawing.Color.Orange;
+            this.folder_create_time_label.Font = new System.Drawing.Font("微软雅黑", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.folder_create_time_label.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(230)))), ((int)(((byte)(162)))), ((int)(((byte)(60)))));
             this.folder_create_time_label.Location = new System.Drawing.Point(106, 36);
             this.folder_create_time_label.Name = "folder_create_time_label";
             this.folder_create_time_label.Size = new System.Drawing.Size(72, 16);
@@ -1035,8 +1039,8 @@
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.label4.ForeColor = System.Drawing.Color.Orange;
+            this.label4.Font = new System.Drawing.Font("微软雅黑", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.label4.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(144)))), ((int)(((byte)(147)))), ((int)(((byte)(153)))));
             this.label4.Location = new System.Drawing.Point(6, 69);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(56, 16);
@@ -1046,8 +1050,8 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.label3.ForeColor = System.Drawing.Color.Orange;
+            this.label3.Font = new System.Drawing.Font("微软雅黑", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.label3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(144)))), ((int)(((byte)(147)))), ((int)(((byte)(153)))));
             this.label3.Location = new System.Drawing.Point(6, 36);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(88, 16);
@@ -1070,14 +1074,16 @@
             this.groupBox2.Name = "groupBox2";
             this.groupBox2.Size = new System.Drawing.Size(746, 185);
             this.groupBox2.TabIndex = 28;
+            this.groupBox2.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.groupBox2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(158)))), ((int)(((byte)(255)))));
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "文件信息";
             // 
             // file_status_label
             // 
             this.file_status_label.AutoSize = true;
-            this.file_status_label.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.file_status_label.ForeColor = System.Drawing.Color.Orange;
+            this.file_status_label.Font = new System.Drawing.Font("微软雅黑", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.file_status_label.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(230)))), ((int)(((byte)(162)))), ((int)(((byte)(60)))));
             this.file_status_label.Location = new System.Drawing.Point(58, 155);
             this.file_status_label.Name = "file_status_label";
             this.file_status_label.Size = new System.Drawing.Size(72, 16);
@@ -1088,8 +1094,8 @@
             // file_upload_time_label
             // 
             this.file_upload_time_label.AutoSize = true;
-            this.file_upload_time_label.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.file_upload_time_label.ForeColor = System.Drawing.Color.Orange;
+            this.file_upload_time_label.Font = new System.Drawing.Font("微软雅黑", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.file_upload_time_label.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(230)))), ((int)(((byte)(162)))), ((int)(((byte)(60)))));
             this.file_upload_time_label.Location = new System.Drawing.Point(90, 125);
             this.file_upload_time_label.Name = "file_upload_time_label";
             this.file_upload_time_label.Size = new System.Drawing.Size(72, 16);
@@ -1100,8 +1106,8 @@
             // file_size_label
             // 
             this.file_size_label.AutoSize = true;
-            this.file_size_label.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.file_size_label.ForeColor = System.Drawing.Color.Orange;
+            this.file_size_label.Font = new System.Drawing.Font("微软雅黑", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.file_size_label.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(230)))), ((int)(((byte)(162)))), ((int)(((byte)(60)))));
             this.file_size_label.Location = new System.Drawing.Point(68, 96);
             this.file_size_label.Name = "file_size_label";
             this.file_size_label.Size = new System.Drawing.Size(72, 16);
@@ -1112,8 +1118,8 @@
             // file_path_label
             // 
             this.file_path_label.AutoSize = true;
-            this.file_path_label.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.file_path_label.ForeColor = System.Drawing.Color.Orange;
+            this.file_path_label.Font = new System.Drawing.Font("微软雅黑", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.file_path_label.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(230)))), ((int)(((byte)(162)))), ((int)(((byte)(60)))));
             this.file_path_label.Location = new System.Drawing.Point(68, 63);
             this.file_path_label.Name = "file_path_label";
             this.file_path_label.Size = new System.Drawing.Size(72, 16);
@@ -1124,8 +1130,8 @@
             // file_name_label
             // 
             this.file_name_label.AutoSize = true;
-            this.file_name_label.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.file_name_label.ForeColor = System.Drawing.Color.Orange;
+            this.file_name_label.Font = new System.Drawing.Font("微软雅黑", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.file_name_label.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(230)))), ((int)(((byte)(162)))), ((int)(((byte)(60)))));
             this.file_name_label.Location = new System.Drawing.Point(68, 30);
             this.file_name_label.Name = "file_name_label";
             this.file_name_label.Size = new System.Drawing.Size(72, 16);
@@ -1136,8 +1142,8 @@
             // label13
             // 
             this.label13.AutoSize = true;
-            this.label13.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.label13.ForeColor = System.Drawing.Color.Orange;
+            this.label13.Font = new System.Drawing.Font("微软雅黑", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.label13.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(144)))), ((int)(((byte)(147)))), ((int)(((byte)(153)))));
             this.label13.Location = new System.Drawing.Point(6, 155);
             this.label13.Name = "label13";
             this.label13.Size = new System.Drawing.Size(56, 16);
@@ -1147,8 +1153,8 @@
             // label12
             // 
             this.label12.AutoSize = true;
-            this.label12.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.label12.ForeColor = System.Drawing.Color.Orange;
+            this.label12.Font = new System.Drawing.Font("微软雅黑", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.label12.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(144)))), ((int)(((byte)(147)))), ((int)(((byte)(153)))));
             this.label12.Location = new System.Drawing.Point(6, 125);
             this.label12.Name = "label12";
             this.label12.Size = new System.Drawing.Size(88, 16);
@@ -1158,8 +1164,8 @@
             // label9
             // 
             this.label9.AutoSize = true;
-            this.label9.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.label9.ForeColor = System.Drawing.Color.Orange;
+            this.label9.Font = new System.Drawing.Font("微软雅黑", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.label9.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(144)))), ((int)(((byte)(147)))), ((int)(((byte)(153)))));
             this.label9.Location = new System.Drawing.Point(6, 96);
             this.label9.Name = "label9";
             this.label9.Size = new System.Drawing.Size(56, 16);
@@ -1169,8 +1175,8 @@
             // label10
             // 
             this.label10.AutoSize = true;
-            this.label10.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.label10.ForeColor = System.Drawing.Color.Orange;
+            this.label10.Font = new System.Drawing.Font("微软雅黑", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.label10.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(144)))), ((int)(((byte)(147)))), ((int)(((byte)(153)))));
             this.label10.Location = new System.Drawing.Point(6, 63);
             this.label10.Name = "label10";
             this.label10.Size = new System.Drawing.Size(56, 16);
@@ -1180,8 +1186,8 @@
             // label11
             // 
             this.label11.AutoSize = true;
-            this.label11.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.label11.ForeColor = System.Drawing.Color.Orange;
+            this.label11.Font = new System.Drawing.Font("微软雅黑", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.label11.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(144)))), ((int)(((byte)(147)))), ((int)(((byte)(153)))));
             this.label11.Location = new System.Drawing.Point(6, 30);
             this.label11.Name = "label11";
             this.label11.Size = new System.Drawing.Size(56, 16);
@@ -1192,7 +1198,7 @@
             // 
             this.prePage_button.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.prePage_button.BackColor = System.Drawing.Color.Transparent;
-            this.prePage_button.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.prePage_button.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.prePage_button.Location = new System.Drawing.Point(1141, 681);
             this.prePage_button.Name = "prePage_button";
             this.prePage_button.Size = new System.Drawing.Size(89, 32);
@@ -1206,8 +1212,8 @@
             this.label5.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.label5.AutoSize = true;
-            this.label5.Font = new System.Drawing.Font("宋体", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.label5.ForeColor = System.Drawing.Color.Green;
+            this.label5.Font = new System.Drawing.Font("微软雅黑", 13F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.label5.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(48)))), ((int)(((byte)(49)))), ((int)(((byte)(51)))));
             this.label5.Location = new System.Drawing.Point(614, 206);
             this.label5.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.label5.Name = "label5";
@@ -1223,7 +1229,7 @@
             this.file_list_dataGridView.AllowUserToResizeRows = false;
             this.file_list_dataGridView.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.file_list_dataGridView.BackgroundColor = System.Drawing.Color.Cornsilk;
+            this.file_list_dataGridView.BackgroundColor = System.Drawing.Color.White;
             this.file_list_dataGridView.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.file_list_dataGridView.ColumnHeadersHeight = 40;
             this.file_list_dataGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
@@ -1239,9 +1245,9 @@
             this.文件标识});
             dataGridViewCellStyle64.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle64.BackColor = System.Drawing.SystemColors.Window;
-            dataGridViewCellStyle64.Font = new System.Drawing.Font("宋体", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            dataGridViewCellStyle64.Font = new System.Drawing.Font("微软雅黑", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             dataGridViewCellStyle64.ForeColor = System.Drawing.SystemColors.ControlText;
-            dataGridViewCellStyle64.SelectionBackColor = System.Drawing.Color.LightSkyBlue;
+            dataGridViewCellStyle64.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(236)))), ((int)(((byte)(245)))), ((int)(((byte)(255)))));
             dataGridViewCellStyle64.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
             dataGridViewCellStyle64.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
             this.file_list_dataGridView.DefaultCellStyle = dataGridViewCellStyle64;
@@ -1252,9 +1258,9 @@
             this.file_list_dataGridView.ReadOnly = true;
             this.file_list_dataGridView.RowHeadersWidth = 60;
             dataGridViewCellStyle65.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle65.Font = new System.Drawing.Font("宋体", 5.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            dataGridViewCellStyle65.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.file_list_dataGridView.RowsDefaultCellStyle = dataGridViewCellStyle65;
-            this.file_list_dataGridView.RowTemplate.DefaultCellStyle.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.file_list_dataGridView.RowTemplate.DefaultCellStyle.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.file_list_dataGridView.RowTemplate.Height = 30;
             this.file_list_dataGridView.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.file_list_dataGridView.Size = new System.Drawing.Size(1322, 432);
@@ -1271,7 +1277,7 @@
             // 
             // dataGridViewTextBoxColumn6
             // 
-            dataGridViewCellStyle56.Font = new System.Drawing.Font("宋体", 5.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            dataGridViewCellStyle56.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.dataGridViewTextBoxColumn6.DefaultCellStyle = dataGridViewCellStyle56;
             this.dataGridViewTextBoxColumn6.FillWeight = 213.198F;
             this.dataGridViewTextBoxColumn6.HeaderText = "序号";
@@ -1282,7 +1288,7 @@
             // 
             // dataGridViewTextBoxColumn7
             // 
-            dataGridViewCellStyle57.Font = new System.Drawing.Font("宋体", 5.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            dataGridViewCellStyle57.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.dataGridViewTextBoxColumn7.DefaultCellStyle = dataGridViewCellStyle57;
             this.dataGridViewTextBoxColumn7.FillWeight = 77.3604F;
             this.dataGridViewTextBoxColumn7.HeaderText = "文件名称";
@@ -1292,7 +1298,7 @@
             // 
             // Column18
             // 
-            dataGridViewCellStyle58.Font = new System.Drawing.Font("宋体", 5.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            dataGridViewCellStyle58.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.Column18.DefaultCellStyle = dataGridViewCellStyle58;
             this.Column18.HeaderText = "文件路径";
             this.Column18.Name = "Column18";
@@ -1301,7 +1307,7 @@
             // 
             // dataGridViewTextBoxColumn9
             // 
-            dataGridViewCellStyle59.Font = new System.Drawing.Font("宋体", 5.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            dataGridViewCellStyle59.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.dataGridViewTextBoxColumn9.DefaultCellStyle = dataGridViewCellStyle59;
             this.dataGridViewTextBoxColumn9.FillWeight = 77.3604F;
             this.dataGridViewTextBoxColumn9.HeaderText = "文件大小";
@@ -1311,7 +1317,7 @@
             // 
             // dataGridViewTextBoxColumn8
             // 
-            dataGridViewCellStyle60.Font = new System.Drawing.Font("宋体", 5.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            dataGridViewCellStyle60.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.dataGridViewTextBoxColumn8.DefaultCellStyle = dataGridViewCellStyle60;
             this.dataGridViewTextBoxColumn8.FillWeight = 77.3604F;
             this.dataGridViewTextBoxColumn8.HeaderText = "上传时间";
@@ -1321,7 +1327,7 @@
             // 
             // Column3
             // 
-            dataGridViewCellStyle61.Font = new System.Drawing.Font("宋体", 5.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            dataGridViewCellStyle61.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.Column3.DefaultCellStyle = dataGridViewCellStyle61;
             this.Column3.HeaderText = "状态";
             this.Column3.Name = "Column3";
@@ -1359,7 +1365,7 @@
             // nextPage_button
             // 
             this.nextPage_button.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.nextPage_button.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.nextPage_button.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.nextPage_button.Location = new System.Drawing.Point(1236, 681);
             this.nextPage_button.Name = "nextPage_button";
             this.nextPage_button.Size = new System.Drawing.Size(89, 32);
@@ -1381,12 +1387,13 @@
             this.tabPage2.Size = new System.Drawing.Size(1335, 721);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "上传列表";
-            this.tabPage2.UseVisualStyleBackColor = true;
+            this.tabPage2.BackColor = System.Drawing.Color.White;
+            this.tabPage2.UseVisualStyleBackColor = false;
             // 
             // file_upload_clear_button
             // 
             this.file_upload_clear_button.BackColor = System.Drawing.Color.Transparent;
-            this.file_upload_clear_button.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.file_upload_clear_button.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.file_upload_clear_button.Location = new System.Drawing.Point(114, 10);
             this.file_upload_clear_button.Name = "file_upload_clear_button";
             this.file_upload_clear_button.Size = new System.Drawing.Size(100, 36);
@@ -1404,6 +1411,8 @@
             this.groupBox4.Name = "groupBox4";
             this.groupBox4.Size = new System.Drawing.Size(1321, 164);
             this.groupBox4.TabIndex = 39;
+            this.groupBox4.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.groupBox4.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(158)))), ((int)(((byte)(255)))));
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "上传日志";
             // 
@@ -1416,12 +1425,13 @@
             this.file_upload_log_richTextBox.Name = "file_upload_log_richTextBox";
             this.file_upload_log_richTextBox.Size = new System.Drawing.Size(1308, 132);
             this.file_upload_log_richTextBox.TabIndex = 0;
+            this.file_upload_log_richTextBox.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(48)))), ((int)(((byte)(49)))), ((int)(((byte)(51)))));
             this.file_upload_log_richTextBox.Text = "";
             // 
             // file_upload_all_button
             // 
             this.file_upload_all_button.BackColor = System.Drawing.Color.Transparent;
-            this.file_upload_all_button.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.file_upload_all_button.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.file_upload_all_button.Location = new System.Drawing.Point(6, 10);
             this.file_upload_all_button.Name = "file_upload_all_button";
             this.file_upload_all_button.Size = new System.Drawing.Size(100, 36);
@@ -1434,8 +1444,8 @@
             // 
             this.label7.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)));
             this.label7.AutoSize = true;
-            this.label7.Font = new System.Drawing.Font("宋体", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.label7.ForeColor = System.Drawing.Color.Green;
+            this.label7.Font = new System.Drawing.Font("微软雅黑", 13F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.label7.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(48)))), ((int)(((byte)(49)))), ((int)(((byte)(51)))));
             this.label7.Location = new System.Drawing.Point(597, 15);
             this.label7.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.label7.Name = "label7";
@@ -1452,7 +1462,7 @@
             this.file_upload_list_dataGridView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.file_upload_list_dataGridView.BackgroundColor = System.Drawing.Color.Cornsilk;
+            this.file_upload_list_dataGridView.BackgroundColor = System.Drawing.Color.White;
             this.file_upload_list_dataGridView.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.file_upload_list_dataGridView.ColumnHeadersHeight = 40;
             this.file_upload_list_dataGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
@@ -1479,9 +1489,9 @@
             this.file_upload_list_dataGridView.ReadOnly = true;
             this.file_upload_list_dataGridView.RowHeadersWidth = 60;
             dataGridViewCellStyle70.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle70.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            dataGridViewCellStyle70.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.file_upload_list_dataGridView.RowsDefaultCellStyle = dataGridViewCellStyle70;
-            this.file_upload_list_dataGridView.RowTemplate.DefaultCellStyle.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.file_upload_list_dataGridView.RowTemplate.DefaultCellStyle.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.file_upload_list_dataGridView.RowTemplate.Height = 30;
             this.file_upload_list_dataGridView.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.file_upload_list_dataGridView.Size = new System.Drawing.Size(1320, 494);
@@ -1575,7 +1585,7 @@
             // Column5
             // 
             dataGridViewCellStyle69.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle69.Font = new System.Drawing.Font("宋体", 7.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            dataGridViewCellStyle69.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.Column5.DefaultCellStyle = dataGridViewCellStyle69;
             this.Column5.HeaderText = "文件标识(tag)";
             this.Column5.Name = "Column5";
@@ -1641,12 +1651,13 @@
             this.tabPage3.Size = new System.Drawing.Size(1335, 721);
             this.tabPage3.TabIndex = 2;
             this.tabPage3.Text = "下载列表";
-            this.tabPage3.UseVisualStyleBackColor = true;
+            this.tabPage3.BackColor = System.Drawing.Color.White;
+            this.tabPage3.UseVisualStyleBackColor = false;
             // 
             // select_download_path_button
             // 
             this.select_download_path_button.BackColor = System.Drawing.Color.Transparent;
-            this.select_download_path_button.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.select_download_path_button.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.select_download_path_button.Location = new System.Drawing.Point(221, 10);
             this.select_download_path_button.Name = "select_download_path_button";
             this.select_download_path_button.Size = new System.Drawing.Size(139, 36);
@@ -1658,7 +1669,7 @@
             // file_download_clear_button
             // 
             this.file_download_clear_button.BackColor = System.Drawing.Color.Transparent;
-            this.file_download_clear_button.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.file_download_clear_button.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.file_download_clear_button.Location = new System.Drawing.Point(114, 10);
             this.file_download_clear_button.Name = "file_download_clear_button";
             this.file_download_clear_button.Size = new System.Drawing.Size(100, 36);
@@ -1676,8 +1687,10 @@
             this.groupBox3.Name = "groupBox3";
             this.groupBox3.Size = new System.Drawing.Size(1321, 177);
             this.groupBox3.TabIndex = 43;
+            this.groupBox3.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.groupBox3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(158)))), ((int)(((byte)(255)))));
             this.groupBox3.TabStop = false;
-            this.groupBox3.Text = "上传日志";
+            this.groupBox3.Text = "下载日志";
             // 
             // file_download_log_richTextBox
             // 
@@ -1688,12 +1701,13 @@
             this.file_download_log_richTextBox.Name = "file_download_log_richTextBox";
             this.file_download_log_richTextBox.Size = new System.Drawing.Size(1308, 145);
             this.file_download_log_richTextBox.TabIndex = 0;
+            this.file_download_log_richTextBox.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(48)))), ((int)(((byte)(49)))), ((int)(((byte)(51)))));
             this.file_download_log_richTextBox.Text = "";
             // 
             // file_download_all_button
             // 
             this.file_download_all_button.BackColor = System.Drawing.Color.Transparent;
-            this.file_download_all_button.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.file_download_all_button.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.file_download_all_button.Location = new System.Drawing.Point(6, 10);
             this.file_download_all_button.Name = "file_download_all_button";
             this.file_download_all_button.Size = new System.Drawing.Size(100, 36);
@@ -1706,8 +1720,8 @@
             // 
             this.label8.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)));
             this.label8.AutoSize = true;
-            this.label8.Font = new System.Drawing.Font("宋体", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.label8.ForeColor = System.Drawing.Color.Green;
+            this.label8.Font = new System.Drawing.Font("微软雅黑", 13F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.label8.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(48)))), ((int)(((byte)(49)))), ((int)(((byte)(51)))));
             this.label8.Location = new System.Drawing.Point(596, 15);
             this.label8.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.label8.Name = "label8";
@@ -1724,7 +1738,7 @@
             this.file_download_list_dataGridView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.file_download_list_dataGridView.BackgroundColor = System.Drawing.Color.Cornsilk;
+            this.file_download_list_dataGridView.BackgroundColor = System.Drawing.Color.White;
             this.file_download_list_dataGridView.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.file_download_list_dataGridView.ColumnHeadersHeight = 40;
             this.file_download_list_dataGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
@@ -1749,9 +1763,9 @@
             this.file_download_list_dataGridView.ReadOnly = true;
             this.file_download_list_dataGridView.RowHeadersWidth = 60;
             dataGridViewCellStyle49.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle49.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            dataGridViewCellStyle49.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.file_download_list_dataGridView.RowsDefaultCellStyle = dataGridViewCellStyle49;
-            this.file_download_list_dataGridView.RowTemplate.DefaultCellStyle.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.file_download_list_dataGridView.RowTemplate.DefaultCellStyle.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.file_download_list_dataGridView.RowTemplate.Height = 30;
             this.file_download_list_dataGridView.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.file_download_list_dataGridView.Size = new System.Drawing.Size(1320, 480);
@@ -1761,7 +1775,7 @@
             // dataGridViewTextBoxColumn27
             // 
             dataGridViewCellStyle43.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle43.Font = new System.Drawing.Font("宋体", 7.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            dataGridViewCellStyle43.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.dataGridViewTextBoxColumn27.DefaultCellStyle = dataGridViewCellStyle43;
             this.dataGridViewTextBoxColumn27.FillWeight = 213.198F;
             this.dataGridViewTextBoxColumn27.HeaderText = "序号";
@@ -1841,7 +1855,7 @@
             // dataGridViewTextBoxColumn31
             // 
             dataGridViewCellStyle47.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle47.Font = new System.Drawing.Font("宋体", 7.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            dataGridViewCellStyle47.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.dataGridViewTextBoxColumn31.DefaultCellStyle = dataGridViewCellStyle47;
             this.dataGridViewTextBoxColumn31.FillWeight = 77.3604F;
             this.dataGridViewTextBoxColumn31.HeaderText = "文件标识(tag)";
@@ -1854,7 +1868,7 @@
             // dataGridViewTextBoxColumn32
             // 
             dataGridViewCellStyle48.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle48.Font = new System.Drawing.Font("宋体", 7.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            dataGridViewCellStyle48.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.dataGridViewTextBoxColumn32.DefaultCellStyle = dataGridViewCellStyle48;
             this.dataGridViewTextBoxColumn32.FillWeight = 213.198F;
             this.dataGridViewTextBoxColumn32.HeaderText = "文件异步任务(helper)";
@@ -1894,7 +1908,7 @@
             // 
             // file_refresh_button
             // 
-            this.file_refresh_button.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.file_refresh_button.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.file_refresh_button.Location = new System.Drawing.Point(6, 8);
             this.file_refresh_button.Name = "file_refresh_button";
             this.file_refresh_button.Size = new System.Drawing.Size(89, 36);
@@ -1906,8 +1920,8 @@
             // person_folder_label
             // 
             this.person_folder_label.AutoSize = true;
-            this.person_folder_label.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.person_folder_label.ForeColor = System.Drawing.Color.Green;
+            this.person_folder_label.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.person_folder_label.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(48)))), ((int)(((byte)(49)))), ((int)(((byte)(51)))));
             this.person_folder_label.Location = new System.Drawing.Point(83, 50);
             this.person_folder_label.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.person_folder_label.Name = "person_folder_label";
@@ -1920,6 +1934,9 @@
             // 
             this.personal_file_treeView.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left)));
+            this.personal_file_treeView.BackColor = System.Drawing.Color.White;
+            this.personal_file_treeView.Font = new System.Drawing.Font("微软雅黑", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.personal_file_treeView.LineColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(223)))), ((int)(((byte)(230)))));
             this.personal_file_treeView.Location = new System.Drawing.Point(6, 74);
             this.personal_file_treeView.Name = "personal_file_treeView";
             this.personal_file_treeView.Size = new System.Drawing.Size(265, 751);
@@ -1929,8 +1946,8 @@
             // net_rate_label
             // 
             this.net_rate_label.AutoSize = true;
-            this.net_rate_label.Font = new System.Drawing.Font("宋体", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.net_rate_label.ForeColor = System.Drawing.Color.Green;
+            this.net_rate_label.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.net_rate_label.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(48)))), ((int)(((byte)(49)))), ((int)(((byte)(51)))));
             this.net_rate_label.Location = new System.Drawing.Point(7, 917);
             this.net_rate_label.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.net_rate_label.Name = "net_rate_label";
@@ -1991,8 +2008,8 @@
             // 
             this.date_label.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.date_label.AutoSize = true;
-            this.date_label.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.date_label.ForeColor = System.Drawing.Color.Green;
+            this.date_label.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.date_label.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(48)))), ((int)(((byte)(49)))), ((int)(((byte)(51)))));
             this.date_label.Location = new System.Drawing.Point(1341, 24);
             this.date_label.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.date_label.Name = "date_label";
@@ -2024,7 +2041,7 @@
             // 
             // dataGridViewTextBoxColumn16
             // 
-            dataGridViewCellStyle71.Font = new System.Drawing.Font("宋体", 5.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            dataGridViewCellStyle71.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.dataGridViewTextBoxColumn16.DefaultCellStyle = dataGridViewCellStyle71;
             this.dataGridViewTextBoxColumn16.FillWeight = 213.198F;
             this.dataGridViewTextBoxColumn16.HeaderText = "序号";
@@ -2035,7 +2052,7 @@
             // 
             // dataGridViewTextBoxColumn17
             // 
-            dataGridViewCellStyle72.Font = new System.Drawing.Font("宋体", 5.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            dataGridViewCellStyle72.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.dataGridViewTextBoxColumn17.DefaultCellStyle = dataGridViewCellStyle72;
             this.dataGridViewTextBoxColumn17.FillWeight = 77.3604F;
             this.dataGridViewTextBoxColumn17.HeaderText = "文件名称";
@@ -2046,7 +2063,7 @@
             // 
             // dataGridViewTextBoxColumn18
             // 
-            dataGridViewCellStyle73.Font = new System.Drawing.Font("宋体", 5.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            dataGridViewCellStyle73.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.dataGridViewTextBoxColumn18.DefaultCellStyle = dataGridViewCellStyle73;
             this.dataGridViewTextBoxColumn18.FillWeight = 77.3604F;
             this.dataGridViewTextBoxColumn18.HeaderText = "文件大小";
@@ -2057,7 +2074,7 @@
             // 
             // dataGridViewTextBoxColumn19
             // 
-            dataGridViewCellStyle74.Font = new System.Drawing.Font("宋体", 5.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            dataGridViewCellStyle74.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.dataGridViewTextBoxColumn19.DefaultCellStyle = dataGridViewCellStyle74;
             this.dataGridViewTextBoxColumn19.FillWeight = 77.3604F;
             this.dataGridViewTextBoxColumn19.HeaderText = "上传时间";
@@ -2068,7 +2085,7 @@
             // 
             // dataGridViewTextBoxColumn20
             // 
-            dataGridViewCellStyle75.Font = new System.Drawing.Font("宋体", 5.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            dataGridViewCellStyle75.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.dataGridViewTextBoxColumn20.DefaultCellStyle = dataGridViewCellStyle75;
             this.dataGridViewTextBoxColumn20.FillWeight = 77.3604F;
             this.dataGridViewTextBoxColumn20.HeaderText = "状态";
@@ -2078,7 +2095,7 @@
             // 
             // dataGridViewTextBoxColumn21
             // 
-            dataGridViewCellStyle76.Font = new System.Drawing.Font("宋体", 5.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            dataGridViewCellStyle76.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.dataGridViewTextBoxColumn21.DefaultCellStyle = dataGridViewCellStyle76;
             this.dataGridViewTextBoxColumn21.FillWeight = 213.198F;
             this.dataGridViewTextBoxColumn21.HeaderText = "序号";
@@ -2120,7 +2137,7 @@
             // dataGridViewTextBoxColumn25
             // 
             dataGridViewCellStyle77.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle77.Font = new System.Drawing.Font("宋体", 7.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            dataGridViewCellStyle77.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.dataGridViewTextBoxColumn25.DefaultCellStyle = dataGridViewCellStyle77;
             this.dataGridViewTextBoxColumn25.FillWeight = 77.3604F;
             this.dataGridViewTextBoxColumn25.HeaderText = "百分比";
@@ -2186,7 +2203,7 @@
             // dataGridViewTextBoxColumn36
             // 
             dataGridViewCellStyle79.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle79.Font = new System.Drawing.Font("宋体", 7.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            dataGridViewCellStyle79.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.dataGridViewTextBoxColumn36.DefaultCellStyle = dataGridViewCellStyle79;
             this.dataGridViewTextBoxColumn36.FillWeight = 77.3604F;
             this.dataGridViewTextBoxColumn36.HeaderText = "文件标识(tag)";
@@ -2198,7 +2215,7 @@
             // dataGridViewTextBoxColumn37
             // 
             dataGridViewCellStyle80.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle80.Font = new System.Drawing.Font("宋体", 7.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            dataGridViewCellStyle80.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.dataGridViewTextBoxColumn37.DefaultCellStyle = dataGridViewCellStyle80;
             this.dataGridViewTextBoxColumn37.FillWeight = 213.198F;
             this.dataGridViewTextBoxColumn37.HeaderText = "文件异步任务(helper)";
@@ -2230,7 +2247,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.BackColor = System.Drawing.Color.White;
+            this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
             this.ClientSize = new System.Drawing.Size(1639, 938);
             this.Controls.Add(this.date_label);
             this.Controls.Add(this.net_rate_label);

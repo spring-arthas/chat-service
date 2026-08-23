@@ -1,10 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Collections.Concurrent;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Drawing;
 using System.Net;
 using System.Net.Sockets;
 using chat_service.net;
@@ -16,31 +14,10 @@ using System.Windows.Forms;
 using chat_service.service.file;
 using chat_service.file;
 
-using Newtonsoft.Json.Linq;
-
 namespace chat_service.util
 {
     public class NetServiceContext
     {
-        private static readonly byte[] MAGIC = { 0xFA, 0xCE };
-        private const int HEADER_LENGTH = 8;
-        // 用户帧类型
-        public const byte USER_REGISTER_REQ = 0x30;
-        public const byte USER_LOGIN_REQ = 0x31;
-        public const byte USER_CHANGE_PWD_REQ = 0x32;
-        public const byte USER_LOGOUT_REQ = 0x33;
-        public const byte USER_RESPONSE = 0x34;
-        // 文件帧类型
-        public const byte DIR_CREATE_REQ = 0x10;
-        public const byte DIR_DELETE_REQ = 0x11;
-        public const byte DIR_UPDATE_REQ = 0x12;
-        public const byte DIR_MOVE_REQ = 0x13;
-        public const byte DIR_RESPONSE = 0x14;
-        // 文件操作帧类型
-        public const byte FILE_LIST_REQ = 0x40;
-        public const byte FILE_DETAIL_REQ = 0x41;
-        public const byte FILE_DELETE_REQ = 0x42;
-        public const byte FILE_RESPONSE = 0x43;
         // 远程服务地址
         public static string remoteServiceAddress = "", remoteFileServiceAddress = "", remoteFileDownloadServiceAddress = "";
         // 下载路径
@@ -61,6 +38,8 @@ namespace chat_service.util
         public static Socket socket = null;
         // 文件服务地址
         public static string[] address = null;
+        // 当前处理中的FrameModel
+        private static FrameModel currentFrameModel = new FrameModel("1", 0);
         // socket建立事件
         private static ManualResetEvent connectDone = new ManualResetEvent(false);
         // socket接收事件
@@ -68,81 +47,17 @@ namespace chat_service.util
         // socket接收事件
         private static ManualResetEvent receiveDone = new ManualResetEvent(false);
 
-        // ==================== 同步请求上下文 ====================
-        private class RequestWaitState
-        {
-            public ManualResetEvent WaitEvent { get; } = new ManualResetEvent(false);
-            public NetResponse Response { get; set; }
-        }
 
-        // Key: Expected Response Frame Type, Value: Wait State
-        private static ConcurrentDictionary<byte, RequestWaitState> _pendingRequests = new ConcurrentDictionary<byte, RequestWaitState>();
 
-        // 发送并等待响应
-        private static NetResponse sendFrameWait(byte requestFrameType, string jsonData, byte expectedResponseType, int timeoutMillis = 10000)
-        {
-            RequestWaitState waitState = new RequestWaitState();
 
-            // 注册监听
-            // 注意：如果多个线程等待同一个响应类型，这里可能会有问题。
-            // 假设同一时间只有一个特定类型的请求在进行（通常是一个用户操作对应一个响应），
-            // 或者通过更复杂的Key (FrameType) 来区分。
-            // 目前简单实现：假设FrameType能唯一对应Pending Request。
-            _pendingRequests[expectedResponseType] = waitState;
 
-            try
-            {
-                // 发送数据
-                sendFrame(requestFrameType, jsonData);
-
-                // 等待信号
-                if (waitState.WaitEvent.WaitOne(timeoutMillis))
-                {
-                    // 收到信号
-                    return waitState.Response;
-                }
-                else
-                {
-                    // 超时
-                    return NetResponse.ofFail("请求超时，服务器未响应");
-                }
-            }
-            catch (Exception ex)
-            {
-                return NetResponse.ofFail("请求异常: " + ex.Message);
-            }
-            finally
-            {
-                // 清理
-                RequestWaitState removed;
-                _pendingRequests.TryRemove(expectedResponseType, out removed);
-            }
-        }
-
-        // 聊天连接回调 
-        private static void chatConnectCallback(IAsyncResult ar)
-        {
-            try
-            {
-                // Retrieve the socket from the state object.     
-                Socket client = (Socket)ar.AsyncState;
-                // 完成连接    
-                client.EndConnect(ar);
-                // Signal that the connection has been made.     
-                connectDone.Set();
-            }
-            catch (Exception e)
-            {
-                string message = e.Message;
-            }
-        }
         // 建立聊天连接
         public static NetResponse chatInitSocketAndConnect()
         {
             // 初始化socket
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, new LingerOption(true, 10));
             string[] address = remoteServiceAddress.Split(':');
+
             // 获取连接地址
             remoteIp = IPAddress.Parse(address[0]);
             remotePort = Convert.ToInt32(address[1]);
@@ -169,741 +84,146 @@ namespace chat_service.util
             }
         }
 
-        /// <summary>
-        /// 客户端登录
-        /// </summary>
-        /// <summary>
-        /// 客户端登录 (同步)
-        /// </summary>
-        public static NetResponse login(string userName, string password)
+        // 聊天连接回调
+        private static void chatConnectCallback(IAsyncResult ar)
         {
-            JObject request = new JObject();
-            request["userName"] = userName;
-            request["password"] = password;
-            Console.WriteLine("发送登录请求: " + request.ToString(Formatting.None));
-            // 0x31 -> Expect 0x34 (USER_RESPONSE)
-            return sendFrameWait(USER_LOGIN_REQ, request.ToString(Formatting.None), USER_RESPONSE);
-        }
-        /// <summary>
-        /// 客户端注册 (同步)
-        /// </summary>
-        public static NetResponse register(UserModel userModel)
-        {
-            JObject request = new JObject();
-            request["userName"] = userModel.getUserName();
-            request["password"] = userModel.getPassword();
-            request["phone"] = userModel.getPhone();
-            request["mail"] = userModel.getMail();
-            Console.WriteLine("发送注册请求: " + request.ToString(Formatting.None));
-            // 0x30 -> Expect 0x04 (Assuming Type 4 is Register Response based on handlers) or USER_RESPONSE?
-            // Looking at receiveResponse: frameType == 4 is Register Response (Register_Form.registerDelegateHandler)
-            return sendFrameWait(USER_REGISTER_REQ, request.ToString(Formatting.None), (byte)4);
-        }
-
-        private static void sendFrame(byte frameType, string jsonData)
-        {
-            byte[] data = Encoding.UTF8.GetBytes(jsonData);
-            byte[] buffer = new byte[HEADER_LENGTH + data.Length];
-
-            buffer[0] = MAGIC[0];
-            buffer[1] = MAGIC[1];
-            buffer[2] = frameType;
-            i buffer[3] = 0; // flags
-            // buffer.putInt(data.length); (Big Endian in Java)
-            byte[] lenBytes = BitConverter.GetBytes(data.Length);
-            if (BitConverter.IsLittleEndian)
+            try
             {
-                Array.Reverse(lenBytes);
+                // Retrieve the socket from the state object.     
+                Socket client = (Socket)ar.AsyncState;
+                // 完成连接    
+                client.EndConnect(ar);
+                // Signal that the connection has been made.     
+                connectDone.Set();
             }
-            Array.Copy(lenBytes, 0, buffer, 4, 4);
-            Array.Copy(data, 0, buffer, 8, data.Length);
-            int sent = 0;
-            while (sent < buffer.Length)
+            catch (Exception e)
             {
-                sent += socket.Send(buffer, sent, buffer.Length - sent, SocketFlags.None);
+
             }
         }
 
-        // ==================== 用户操作方法 ====================
-
-        /// <summary>
-        /// 修改密码
-        /// </summary>
-        /// <summary>
-        /// 修改密码
-        /// </summary>
-        public static NetResponse changePassword(string oldPassword, string newPassword)
+        // 聊天消息同步发送无需等待返回
+        public static void sendMessageNotWaiting(byte frameType, string message, object obj)
         {
-            JObject request = new JObject();
-            request["oldPassword"] = oldPassword;
-            request["newPassword"] = newPassword;
-            Console.WriteLine("发送修改密码请求: " + request.ToString(Formatting.None));
-            return sendFrameWait(USER_CHANGE_PWD_REQ, request.ToString(Formatting.None), USER_RESPONSE);
-        }
-
-        /// <summary>
-        /// 退出登录
-        /// </summary>
-        /// <summary>
-        /// 退出登录
-        /// </summary>
-        public static NetResponse logout()
-        {
-            JObject request = new JObject(); // 空JSON对象
-            Console.WriteLine("发送退出登录请求");
-            // 0x33 (Logout) -> Expect 0x01 (Logout Response based on handlers) or USER_RESPONSE?
-            // receiveResponse handler: frameType == 1 is Logout Response
-            return sendFrameWait(USER_LOGOUT_REQ, request.ToString(Formatting.None), (byte)1);
-        }
-
-        // ==================== 目录操作方法 ====================
-
-        /// <summary>
-        /// 创建目录
-        /// </summary>
-        /// <summary>
-        /// 创建目录
-        /// </summary>
-        public static NetResponse createDirectory(long parentId, string dirName)
-        {
-            JObject request = new JObject();
-            request["parentId"] = parentId;
-            request["dirName"] = dirName;
-            Console.WriteLine("发送创建目录请求: " + request.ToString(Formatting.None));
-            // 0x10 (Dir Create) -> Expect 0x07 (Dir Create Resp based on handler) OR DIR_RESPONSE (0x14)?
-            // receiveResponse says: frameType == (byte)7 (个人网盘文件夹创建)
-            return sendFrameWait(DIR_CREATE_REQ, request.ToString(Formatting.None), (byte)7);
-        }
-
-        /// <summary>
-        /// 删除目录
-        /// </summary>
-        /// <summary>
-        /// 删除目录
-        /// </summary>
-        public static NetResponse deleteDirectory(long dirId)
-        {
-            JObject request = new JObject();
-            request["dirId"] = dirId;
-            Console.WriteLine("发送删除目录请求: " + request.ToString(Formatting.None));
-            // 0x11 (Dir Delete) -> Expect 0x06 (Dir Refresh/Response) or DIR_RESPONSE?
-            // Usually delete triggers a refresh list (Frame 6 or DIR_RESPONSE)
-            return sendFrameWait(DIR_DELETE_REQ, request.ToString(Formatting.None), DIR_RESPONSE);
-        }
-
-        /// <summary>
-        /// 更新目录
-        /// </summary>
-        /// <summary>
-        /// 更新目录
-        /// </summary>
-        public static NetResponse updateDirectory(long dirId, string newName)
-        {
-            JObject request = new JObject();
-            request["dirId"] = dirId;
-            request["newName"] = newName;
-            Console.WriteLine("发送更新目录请求: " + request.ToString(Formatting.None));
-            // 0x12 -> receiveResponse: frameType == 8 (文件夹名称修改)
-            return sendFrameWait(DIR_UPDATE_REQ, request.ToString(Formatting.None), (byte)8);
-        }
-
-        /// <summary>
-        /// 移动目录
-        /// </summary>
-        /// <summary>
-        /// 移动目录
-        /// </summary>
-        public static NetResponse moveDirectory(long dirId, long targetParentId)
-        {
-            JObject request = new JObject();
-            request["dirId"] = dirId;
-            request["targetParentId"] = targetParentId;
-            Console.WriteLine("发送移动目录请求: " + request.ToString(Formatting.None));
-            // 0x13 -> Expect DIR_RESPONSE (0x14) or Refresh (0x06)?
-            // Assuming DIR_RESPONSE or 0x06. Let's assume DIR_RESPONSE for now as structure update.
-            return sendFrameWait(DIR_MOVE_REQ, request.ToString(Formatting.None), DIR_RESPONSE);
-        }
-
-        // ==================== 文件操作方法 ====================
-
-        /// <summary>
-        /// 获取文件列表
-        /// </summary>
-        /// <summary>
-        /// 获取文件列表
-        /// </summary>
-        public static NetResponse getFileList(long dirId, int pageNum = 1, int pageSize = 10)
-        {
-            JObject request = new JObject();
-            request["dirId"] = dirId;
-            request["pageNum"] = pageNum;
-            request["pageSize"] = pageSize;
-            Console.WriteLine("发送获取文件列表请求: " + request.ToString(Formatting.None));
-            // 0x40 -> Expect FILE_RESPONSE (0x43) or 0x06?
-            // Usually File List returns Frame 6 (FileDto)
-            return sendFrameWait(FILE_LIST_REQ, request.ToString(Formatting.None), (byte)6);
-        }
-
-        /// <summary>
-        /// 获取文件详情
-        /// </summary>
-        /// <summary>
-        /// 获取文件详情
-        /// </summary>
-        public static NetResponse getFileDetail(long fileId)
-        {
-            JObject request = new JObject();
-            request["fileId"] = fileId;
-            Console.WriteLine("发送获取文件详情请求: " + request.ToString(Formatting.None));
-            // 0x41 -> Expect FILE_RESPONSE
-            return sendFrameWait(FILE_DETAIL_REQ, request.ToString(Formatting.None), FILE_RESPONSE);
-        }
-
-        /// <summary>
-        /// 删除文件
-        /// </summary>
-        /// <summary>
-        /// 删除文件
-        /// </summary>
-        public static NetResponse deleteFile(long fileId)
-        {
-            JObject request = new JObject();
-            request["fileId"] = fileId;
-            Console.WriteLine("发送删除文件请求: " + request.ToString(Formatting.None));
-            // 0x42 -> Expect 0x0B (11) ?
-            // receiveResponse: frameType == 11 is delete success/list update
-            return sendFrameWait(FILE_DELETE_REQ, request.ToString(Formatting.None), (byte)11);
-        }
-
-
-        public class NetFrame
-        {
-            public byte FrameType { get; set; }
-            public byte[] Data { get; set; }
-        }
-
-        // Deprecated readNextFrame removed as logic is inlined into receiveResponse
-
-        // Main receiving loop
-        public static void receiveResponse(object obj)
-        {
-            while (true)
+            // 主连接已迁移到 SocketManager；旧心跳帧不能再写入新协议连接。
+            // SocketManager 的接收循环会在连接关闭时自行更新状态，因此这里仅
+            // 检查连接状态，不发送旧格式的心跳数据。
+            if (frameType == 5)
             {
-                // 1. Connection Check & Reconnect
-                if (socket == null || !socket.Connected)
+                if (!chat_service.protocol.SocketManager.Shared.IsConnected)
                 {
-                    try
+                    SetMainFormConnectionStatus("与服务端连接已断开, 请重新登录后再试。");
+                }
+                return;
+            }
+
+            // 旧版发送逻辑仍有少量调用点，但应用启动后主连接由
+            // SocketManager 管理，socket 可能尚未初始化。先保存本地引用，
+            // 既避免空引用，也避免在检查与发送之间被其他线程替换。
+            Socket chatSocket = socket;
+            if (chatSocket == null || !chatSocket.Connected || !isSocketConnected(chatSocket))
+            {
+                SetMainFormConnectionStatus("与服务端连接状态异常, 请重新登录后再试。");
+                return;
+            }
+
+
+            // 1 、消息内容数据
+            byte[] frameContextBytes = Encoding.UTF8.GetBytes(message);
+            // 2 、消息内容长度
+            byte[] frameLenthBytes = BitConverter.GetBytes((short)frameContextBytes.Length); Array.Reverse(frameLenthBytes);
+            // 3、是否是结束帧
+            byte endFrame = (byte)1;
+            // 4、帧总长度数据
+            byte[] frameSumLengthBytes = BitConverter.GetBytes(IPAddress.HostToNetworkOrder(4 + 1 + 1 + 4 + frameLenthBytes.Length + frameContextBytes.Length));
+            // 5、构造发送字节数组  4B: 帧总长度数据  1B: 是否是结束帧(1:是，0：不是)1B: 帧类型
+            byte[] sendBytes = new byte[4 + 1 + 1 + 4 + frameLenthBytes.Length + frameContextBytes.Length];
+
+            // 6、封装数据
+            sendBytes[0] = frameSumLengthBytes[0];
+            sendBytes[1] = frameSumLengthBytes[1];
+            sendBytes[2] = frameSumLengthBytes[2];
+            sendBytes[3] = frameSumLengthBytes[3];
+            sendBytes[4] = endFrame;
+            byte[] frameIndexBytes = BitConverter.GetBytes(IPAddress.HostToNetworkOrder(1)); // 当前真实数据,int表示占据4个字节
+            frameIndexBytes.CopyTo(sendBytes, 5);
+
+            sendBytes[9] = (byte)frameType;
+            frameLenthBytes.CopyTo(sendBytes, 10);
+            frameContextBytes.CopyTo(sendBytes, frameLenthBytes.Length + 10);
+            // 7、主线程阻塞进行数据发送，不采取异步线程
+            Dictionary<string, object> stateDictionary = new Dictionary<string, object>();
+            stateDictionary.Add("socket", chatSocket);
+            stateDictionary.Add("object", obj);
+            try
+            {
+                chatSocket.BeginSend(sendBytes, 0, sendBytes.Length, 0, new AsyncCallback(sendChatMesageCallback), stateDictionary);
+            }
+            catch (SocketException)
+            {
+                SetMainFormConnectionStatus("与服务端连接已断开, 请重新登录后再试。");
+            }
+            catch (ObjectDisposedException)
+            {
+                SetMainFormConnectionStatus("与服务端连接已断开, 请重新登录后再试。");
+            }
+        }
+
+        private static void SetMainFormConnectionStatus(string message)
+        {
+            Main_Form mainForm = Main_Form.main_Form;
+            if (mainForm == null || mainForm.IsDisposed || !mainForm.IsHandleCreated)
+            {
+                return;
+            }
+
+            try
+            {
+                mainForm.BeginInvoke(new MethodInvoker(delegate ()
+                {
+                    if (!mainForm.IsDisposed)
                     {
-                        // Update UI: Reconnecting
-                        updateConnectionStatus(obj, "正在尝试重连服务器...", Color.Red);
-
-                        if (socket != null)
-                        {
-                            try { socket.Close(); } catch { }
-                            socket = null;
-                        }
-
-                        // Parse address again or use cached
-                        string[] address = remoteServiceAddress.Split(':');
-                        IPAddress ip = IPAddress.Parse(address[0]);
-                        int port = Convert.ToInt32(address[1]);
-                        IPEndPoint remoteEP = new IPEndPoint(ip, port);
-
-                        socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                        socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, new LingerOption(true, 10));
-
-                        // Synchronous connect
-                        socket.Connect(remoteEP);
-
-                        if (socket.Connected)
-                        {
-                            updateConnectionStatus(obj, "网络连接正常......", Color.Green);
-                        }
+                        mainForm.result_label.Text = message;
                     }
-                    catch (Exception)
-                    {
-                        // Connect failed, wait and retry
-                        Thread.Sleep(3000);
-                        continue;
-                    }
+                }));
+            }
+            catch (InvalidOperationException)
+            {
+                // 窗口关闭期间不再更新界面。
+            }
+        }
+
+        // 聊天消息发送回调
+        private static void sendChatMesageCallback(IAsyncResult ar)
+        {
+            Object obj = null;
+            try
+            {
+                Dictionary<string, object> stateDictionary = (Dictionary<string, object>)ar.AsyncState;
+                obj = stateDictionary["object"];
+                Socket socket = (Socket)stateDictionary["socket"];
+                socket.EndSend(ar);
+                //handler.Shutdown(SocketShutdown.Both);
+                //handler.Close();
+            }
+            catch (Exception e)
+            {
+                // 设置主窗体连接状态
+                if (obj is Login_Register_Form)
+                {
+                    ((Login_Register_Form)obj).Invoke(new MethodInvoker(delegate () { ((Login_Register_Form)obj).connect_label.Text = "连接中......"; }));
                 }
 
-                try
+                // 设置登录窗体连接状态
+                if (obj is Main_Form)
                 {
-                    // 2. Read Header (8 bytes)
-                    byte[] header = new byte[HEADER_LENGTH];
-                    int totalHeaderReceived = 0;
-                    while (totalHeaderReceived < HEADER_LENGTH)
-                    {
-                        int received = socket.Receive(header, totalHeaderReceived, HEADER_LENGTH - totalHeaderReceived, SocketFlags.None);
-                        if (received == 0)
-                        {
-                            throw new SocketException((int)SocketError.ConnectionReset);
-                        }
-                        totalHeaderReceived += received;
-                    }
-
-                    // 3. Validate Magic
-                    if (header[0] != MAGIC[0] || header[1] != MAGIC[1])
-                    {
-                        throw new Exception("无效的协议头 (Magic Mismatch)");
-                    }
-
-                    // 4. Get Frame Type
-                    byte frameType = header[2];
-
-                    // 5. Parse Length
-                    byte[] lenBytes = new byte[4];
-                    Array.Copy(header, 4, lenBytes, 0, 4);
-                    if (BitConverter.IsLittleEndian)
-                    {
-                        Array.Reverse(lenBytes);
-                    }
-                    int dataLength = BitConverter.ToInt32(lenBytes, 0);
-
-                    // Sanity check
-                    if (dataLength < 0 || dataLength > 50 * 1024 * 1024)
-                    {
-                        throw new Exception($"非法的数据长度: {dataLength}");
-                    }
-
-                    // 6. Read Data
-                    byte[] data = new byte[dataLength];
-                    int totalDataReceived = 0;
-                    while (totalDataReceived < dataLength)
-                    {
-                        int received = socket.Receive(data, totalDataReceived, dataLength - totalDataReceived, SocketFlags.None);
-                        if (received == 0)
-                        {
-                            throw new SocketException((int)SocketError.ConnectionReset);
-                        }
-                        totalDataReceived += received;
-                    }
-
-                    // 7. Dispatch
-                    string json = Encoding.UTF8.GetString(data);
-
-                    // --- 同步响应拦截处理 ---
-                    if (_pendingRequests.ContainsKey(frameType))
-                    {
-                        RequestWaitState waitState;
-                        if (_pendingRequests.TryGetValue(frameType, out waitState))
-                        {
-                            // 构造反序列化对象，复用下方的逻辑思路，但直接在这里处理
-                            try
-                            {
-                                NetResponse response = null;
-                                if (frameType == USER_RESPONSE)
-                                {
-                                    CommonRes commonRes = JsonConvert.DeserializeObject<CommonRes>(json);
-                                    response = NetResponse.of(NetResponse.Response.SUCCESS, commonRes, commonRes.getMessage(), "");
-                                }
-                                else if (frameType == DIR_RESPONSE)
-                                {
-                                    FileDto fileDto = JsonConvert.DeserializeObject<FileDto>(json);
-                                    response = NetResponse.of(NetResponse.Response.SUCCESS, fileDto, "Success", "");
-                                }
-                                else if (frameType == (byte)3 || frameType == (byte)12) // User List
-                                {
-                                    List<UserModel> userModels = JsonConvert.DeserializeObject<List<UserModel>>(json);
-                                    response = NetResponse.of(NetResponse.Response.SUCCESS, userModels, "Success", "");
-                                }
-                                else if (frameType == 6 || frameType == 7 || frameType == 8) // File/Dir ops
-                                {
-                                    FileDto fileDto = JsonConvert.DeserializeObject<FileDto>(json);
-                                    response = NetResponse.of(NetResponse.Response.SUCCESS, fileDto, "Success", "");
-                                }
-                                else if (frameType == 11) // File list delete?
-                                {
-                                    List<long> fileIdList = JsonConvert.DeserializeObject<List<long>>(json);
-                                    response = NetResponse.of(NetResponse.Response.SUCCESS, fileIdList, "Success", "");
-                                }
-                                else if (frameType == 4) // Register
-                                {
-                                    CommonRes commonRes = JsonConvert.DeserializeObject<CommonRes>(json);
-                                    response = NetResponse.of(NetResponse.Response.SUCCESS, commonRes, commonRes.getMessage(), "");
-                                }
-                                else
-                                {
-                                    CommonRes commonRes = JsonConvert.DeserializeObject<CommonRes>(json);
-                                    response = NetResponse.of(NetResponse.Response.SUCCESS, commonRes, commonRes.getMessage(), "");
-                                }
-
-                                waitState.Response = response;
-                                waitState.WaitEvent.Set();
-                                // 拦截成功，跳过后续异步Handler
-                                continue;
-                            }
-                            catch (Exception ex)
-                            {
-                                waitState.Response = NetResponse.ofFail("解析响应异常: " + ex.Message);
-                                waitState.WaitEvent.Set();
-                                continue;
-                            }
-                        }
-                    }
-                    // -----------------------
-
-                    try
-                    {
-                        // Use Invoke if needed for simple handlers, but dataHandler usually handles Invoke internaly
-                        if (frameType == USER_RESPONSE)
-                        {
-                            CommonRes commonRes = JsonConvert.DeserializeObject<CommonRes>(json);
-                            dataHandler(frameType, NetResponse.of(NetResponse.Response.SUCCESS, commonRes, commonRes.getMessage(), ""), obj);
-                        }
-                        else if (frameType == DIR_RESPONSE)
-                        {
-                            FileDto fileDto = JsonConvert.DeserializeObject<FileDto>(json);
-                            dataHandler(frameType, NetResponse.of(NetResponse.Response.SUCCESS, fileDto, "Success", ""), obj);
-                        }
-                        else if (frameType == (byte)3 || frameType == (byte)12)
-                        {
-                            List<UserModel> userModels = JsonConvert.DeserializeObject<List<UserModel>>(json);
-                            dataHandler(frameType, NetResponse.of(NetResponse.Response.SUCCESS, userModels, "Success", ""), obj);
-                        }
-                        else if (frameType == 6 || frameType == 7 || frameType == 8)
-                        {
-                            FileDto fileDto = JsonConvert.DeserializeObject<FileDto>(json);
-                            dataHandler(frameType, NetResponse.of(NetResponse.Response.SUCCESS, fileDto, "Success", ""), obj);
-                        }
-                        else if (frameType == 11)
-                        {
-                            List<long> fileIdList = JsonConvert.DeserializeObject<List<long>>(json);
-                            dataHandler(frameType, NetResponse.of(NetResponse.Response.SUCCESS, fileIdList, "Success", ""), obj);
-                        }
-                        else
-                        {
-                            CommonRes commonRes = JsonConvert.DeserializeObject<CommonRes>(json);
-                            dataHandler(frameType, NetResponse.of(NetResponse.Response.SUCCESS, commonRes, commonRes.getMessage(), ""), obj);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine("Data Handler Logic Error: " + ex.Message);
-                    }
-
+                    ((Main_Form)obj).Invoke(new MethodInvoker(delegate () { ((Main_Form)obj).result_label.Text = "连接中......"; }));
                 }
-                catch (Exception)
-                {
-                    // Socket error or logic error, close socket to trigger reconnect
-                    try { if (socket != null) socket.Close(); } catch { }
-                    // Update UI immediately
-                    updateConnectionStatus(obj, "连接异常，正在重连...", Color.Red);
-                }
+
+                // 尝试重连
             }
+
         }
-
-        private static void updateConnectionStatus(object obj, string msg, Color color)
-        {
-            if (Main_Form.main_Form != null && !Main_Form.main_Form.IsDisposed)
-            {
-                Main_Form.main_Form.result_label.Invoke(new MethodInvoker(delegate ()
-                {
-                    Main_Form.main_Form.result_label.Text = msg;
-                    Main_Form.main_Form.result_label.ForeColor = color;
-                }));
-            }
-            else if (obj is Login_Register_Form loginForm && !loginForm.IsDisposed)
-            {
-                loginForm.connect_label.Invoke(new MethodInvoker(delegate ()
-                {
-                    loginForm.connect_label.Text = msg;
-                    loginForm.connect_label.ForeColor = color;
-                }));
-            }
-        }
-
-        /// <summary>
-        /// 业务数据处理
-        /// </summary>
-        /// <param name="frameType"></param>
-        /// <param name="netResponse"></param>
-        /// <param name="obj"></param>
-        public static void dataHandler(byte frameType, NetResponse netResponse, object obj)
-        {
-            if (frameType == USER_RESPONSE)) // 用户响应帧处理
-            {
-                // 登录
-                // 注册
-                // 修改密码
-                // 退出登录
-                Login_Register_Form.loginDelegateHandler(obj, netResponse);
-
-            }
-            else if (frameType == (byte)1) // 1： 登出帧响应
-            {
-                ((Login_Register_Form)obj).Invoke(new MethodInvoker(delegate () { ((Login_Register_Form)obj).Show(); }));
-            }
-            else if (frameType == (byte)2) // 2： 文本帧响应
-            {
-                Main_Form.main_Form.message_richTextBox.Invoke(new MethodInvoker(delegate ()
-                {
-                    Main_Form.main_Form.message_richTextBox.AppendText("[ " + DateTime.Now.ToLocalTime().ToString() + " ] 来自用户 [ " + ((CommonRes)netResponse.getCommonRes()).getUserName() + " ] 数据: "
-                    + ((CommonRes)netResponse.getCommonRes()).getMessage() + "\r\n");
-                }));
-
-                // 由于文件在线传输帧被服务端以聊天服务的文本帧发送，此处需要判断是否为在线文件传输帧
-                FileService.isNeedToFileOnlineTransport(netResponse);
-
-            }
-            else if (frameType == (byte)3) // 返回请求帧为3的数据，刷新在线用户列表
-            {
-                List<UserModel> list = (List<UserModel>)netResponse.getCommonRes();
-                Main_Form.main_Form.user_list_dataGridView.Invoke(new MethodInvoker(delegate ()
-                {
-                    Main_Form.main_Form.user_list_dataGridView.Rows.Clear();
-                    for (int i = 0; i < list.Count; i++)
-                    {
-                        Main_Form.main_Form.user_list_dataGridView.Rows.Add();
-                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[0].Value = i + 1;
-                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[1].Value = list[i].getUserName();
-                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[2].Value = Utils.ToDateTime(list[i].getLastLoginDate());
-                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[3].Value = Utils.ToDateTime(list[i].getRegisterDate());
-                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[4].Value = (list[i].getStatus() == "1" ? "在线" : "未知状态");
-                    }
-                }));
-            }
-            else if (frameType == (byte)4) // 4: 注册帧响应
-            {
-                Register_Form.registerDelegateHandler(obj, netResponse);
-            }
-            else if (frameType == USER_RESPONSE) // 0x34
-            {
-                // Fallback attempt: check content or just treat as logic success.
-                // Assuming it routes to Login or generic handler.
-                // If it's Login Response:
-                Login_Register_Form.loginDelegateHandler(obj, netResponse);
-            }
-            else if (frameType == (byte)5) // 5: 心跳帧响应
-            {
-                Main_Form.main_Form.result_label.Invoke(new MethodInvoker(delegate ()
-                {
-                    if ("HEART_RESPONSE".Equals(((CommonRes)netResponse.getCommonRes()).getMessage()))
-                    {
-                        Main_Form.main_Form.result_label.Text = "网络连接正常......";
-                    }
-                }));
-            }
-            else if (frameType == (byte)6 || frameType == DIR_RESPONSE) // 6: 个人网盘文件夹刷新 OR DIR_RESPONSE (if they share structure)
-            {
-                FileDto fileDto = (FileDto)netResponse.getCommonRes();
-                // 设置当前文件夹下的文件数量
-                Main_Form.main_Form.file_sum_count_label.Invoke(new MethodInvoker(delegate ()
-                {
-                    if (fileDto != null)
-                        Main_Form.main_Form.file_sum_count_label.Text = fileDto.getFileCount().ToString();
-                }));
-
-                Main_Form.main_Form.personal_file_treeView.Invoke(new MethodInvoker(delegate ()
-                {
-                    // 判断当前节点是否为最顶层节点
-                    if (fileDto.getPid() == -1)
-                    {
-                        // 清空所有节点
-                        Main_Form.main_Form.personal_file_treeView.Nodes.Clear();
-                        // 创建根节点
-                        TreeNode rootTreeNode = Main_Form.main_Form.personal_file_treeView.Nodes.Add(fileDto.getFileName());
-                        rootTreeNode.Tag = fileDto;
-
-                        // 判断是否有子节点
-                        if (null != fileDto.getChildFileList() && fileDto.getChildFileList().Count > 0)
-                        {
-                            List<FileDto> list = fileDto.getChildFileList();
-                            // 创建子节点
-                            for (int i = 0; i < list.Count; i++)
-                            {
-                                TreeNode childTreeNode = rootTreeNode.Nodes.Add(list[i].getFileName());
-                                childTreeNode.Tag = list[i];
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // 处理子文件夹还是处理包含的文件
-                        if (fileDto.getHasChild() == "Y")
-                        {
-                            // 含有子文件夹则显示子文件夹  
-                            appendFileNode(fileDto);
-                        }
-                        else
-                        {
-                            // 处理子文件集合
-                            fileListHandle(fileDto);
-                        }
-
-                    }
-                    Main_Form.main_Form.personal_file_treeView.ExpandAll();
-                }));
-            }
-            else if (frameType == (byte)7) // 7: 个人网盘文件夹创建
-            {
-                FileDto fileDto = (FileDto)netResponse.getCommonRes();
-
-                if (fileDto.getRepeatCreate() == "Y")
-                {
-                    File_Create_Form.file_Create_Form.create_description_label.Invoke(new MethodInvoker(delegate ()
-                    {
-                        File_Create_Form.file_Create_Form.create_description_label.Visible = true;
-                        File_Create_Form.file_Create_Form.create_description_label.Text = "创建的文件夹已存在";
-                    }));
-                }
-                else if (fileDto.getFileCount() > 0)
-                {
-                    File_Create_Form.file_Create_Form.create_description_label.Invoke(new MethodInvoker(delegate ()
-                    {
-                        File_Create_Form.file_Create_Form.create_description_label.Visible = true;
-                        File_Create_Form.file_Create_Form.create_description_label.Text = "当前文件夹下已含有文件，无法创建文件夹";
-                    }));
-                }
-                else
-                {
-                    File_Create_Form.file_Create_Form.create_description_label.Invoke(new MethodInvoker(delegate ()
-                    {
-                        File_Create_Form.file_Create_Form.create_description_label.Visible = false;
-                    }));
-                    File_Create_Form.file_Create_Form.Invoke(new MethodInvoker(delegate () { File_Create_Form.file_Create_Form.Close(); }));
-                    // 创建成功刷新文件夹,从头开始刷新
-                    UserModel userModel = new UserModel();
-                    userModel.setRefreshFile("true");
-                    userModel.setUserName(Main_Form.main_Form.commonRes.getUserName());
-                    userModel.setFileName(Main_Form.main_Form.commonRes.getUserName());
-                    userModel.setFilePath(Main_Form.main_Form.commonRes.getUserName());
-                    userModel.setCurrentPage(1);
-                    userModel.setPageSize(10);
-                    NetServiceContext.sendMessageNotWaiting(6, JsonConvert.SerializeObject(userModel), obj);
-                }
-            }
-            else if (frameType == (byte)8) // 个人网盘文件夹名称修改
-            {
-                File_Create_Form.file_Create_Form.create_description_label.Invoke(new MethodInvoker(delegate ()
-                {
-                    File_Create_Form.file_Create_Form.create_description_label.Visible = false;
-                }));
-                File_Create_Form.file_Create_Form.Invoke(new MethodInvoker(delegate () { File_Create_Form.file_Create_Form.Close(); }));
-
-                FileDto fileDto = (FileDto)netResponse.getCommonRes();
-                Main_Form.main_Form.personal_file_treeView.Invoke(new MethodInvoker(delegate ()
-                {
-                    // 根据当前节点fileDto判断处于文件夹树中哪一个节点下,追加相应节点
-                    appendFileNode(fileDto);
-                    Main_Form.main_Form.personal_file_treeView.ExpandAll();
-                }));
-            }
-            else if (frameType == (byte)11)
-            {
-                List<long> list = (List<long>)netResponse.getCommonRes();
-                Main_Form.main_Form.file_list_dataGridView.Invoke(new MethodInvoker(delegate ()
-                {
-                    int count = Main_Form.main_Form.file_list_dataGridView.Rows.Count;
-                    if (count > 0)
-                    {
-                        // 循环遍历删除行记录
-                        for (int i = 0; i < list.Count; i++)
-                        {
-                            for (int j = (count - 1); j >= 0; j--)
-                            {
-                                string tag = Main_Form.main_Form.file_list_dataGridView.Rows[j].Cells[9].Value.ToString();
-                                if (tag == list[i].ToString())
-                                {
-                                    Main_Form.main_Form.file_list_dataGridView.Rows.RemoveAt(j);
-                                    count = Main_Form.main_Form.file_list_dataGridView.Rows.Count;
-                                }
-                            }
-                        }
-                    }
-
-                }));
-
-                // 恢复button的权限
-                Main_Form.main_Form.all_select_button.Invoke(new MethodInvoker(delegate ()
-                {
-                    Main_Form.main_Form.all_select_button.Enabled = true;
-                }));
-
-                Main_Form.main_Form.all_cancel_select_button.Invoke(new MethodInvoker(delegate ()
-                {
-                    Main_Form.main_Form.all_cancel_select_button.Enabled = true;
-                }));
-
-                Main_Form.main_Form.all_select_download_button.Invoke(new MethodInvoker(delegate ()
-                {
-                    Main_Form.main_Form.all_select_download_button.Enabled = true;
-                }));
-
-                Main_Form.main_Form.all_select_delete_button.Invoke(new MethodInvoker(delegate ()
-                {
-                    Main_Form.main_Form.all_select_delete_button.Enabled = true;
-                }));
-
-                Main_Form.main_Form.all_file_refresh_button.Invoke(new MethodInvoker(delegate ()
-                {
-                    Main_Form.main_Form.all_file_refresh_button.Enabled = true;
-                }));
-            }
-            else if (frameType == (byte)12)
-            {
-                List<UserModel> list = (List<UserModel>)netResponse.getCommonRes();
-                Main_Form.main_Form.user_list_dataGridView.Invoke(new MethodInvoker(delegate ()
-                {
-                    Main_Form.main_Form.user_list_dataGridView.Rows.Clear();
-                    for (int i = 0; i < list.Count; i++)
-                    {
-                        Main_Form.main_Form.user_list_dataGridView.Rows.Add();
-                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[0].Value = i + 1;
-                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[1].Value = list[i].getUserName();
-                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[2].Value = Utils.ToDateTime(list[i].getLastLoginDate());
-                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[3].Value = Utils.ToDateTime(list[i].getRegisterDate());
-                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[4].Value = (list[i].getStatus() == "1" ? "在线" : "未知状态");
-                    }
-                }));
-            }
-        }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -913,7 +233,7 @@ namespace chat_service.util
         public static Socket getSendFileSocket()
         {
             Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, new LingerOption(true, 10));
+            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, 20);
             return socket;
         }
 
@@ -921,7 +241,7 @@ namespace chat_service.util
         public static Socket getReceiveFileSocket()
         {
             Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, new LingerOption(true, 10));
+            socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.Linger, 20);
             return socket;
         }
 
@@ -931,13 +251,8 @@ namespace chat_service.util
 
 
 
-        /// <summary>
-        /// 初始化文件发送socket并连接到服务器
-        /// </summary>
-        /// <param name="fileSendSocket"></param>
-        /// <param name="taskType"></param>
-        /// <returns></returns>
-        public static NetResponse initSocketAndConnect(Socket fileSendSocket, string taskType)
+        // 同步建立文件在线传输连接
+        public static NetResponse initSendFileOnlineTransportSocketAndConnect(Socket fileSendSocket, string taskType)
         {
             if (taskType == "FILE.UPLOAD")
             {
@@ -1171,9 +486,539 @@ namespace chat_service.util
 
 
 
+        // 数据接收  Array.Clear(bytes, 0, bytes.Length);
+        public static void loopReceiveServiceData(object obj)
+        {
+            // Begin receiving the data from the remote device.     
+            if (socket != null && socket.Connected)
+            {
+                byte[] receiveBuffer = new byte[bufferSize];
+                StringBuilder stringBuilder = new StringBuilder("");
 
+                while (true)
+                {
+                    try
+                    {
+                        //开始接收信息
+                        int readByteLength = socket.Receive(receiveBuffer);
+                        if (readByteLength == 0)
+                        {
+                            Thread.Sleep(10);
+                            continue;
+                        }
+                        if (readByteLength == -1)
+                        {
+                            socket.Close();
+                            break;
+                        }
 
+                        // 不足基本帧数据，则不处理只缓存
+                        if (readByteLength < 10) // 长度不为8，即连基本帧信息数据都不够，则不进行解析
+                        {
+                            continue;
+                        }
 
+                        if (currentFrameModel.getStatus() == "1") // 从未处理，执行首次处理
+                        {
+                            parseBytes(readByteLength, receiveBuffer, obj);
+                            // 如果刚好字节读取完成则直接处理
+                            if (currentFrameModel.getStatus() == "3")
+                            {
+                                receiveHandler(currentFrameModel, obj);
+                                resetFrameModelAll();
+                            }
+                        }
+                        else if (currentFrameModel.getStatus() == "2") // 处理中
+                        {
+                            int index = currentFrameModel.getIndex();
+                            // 获取剩余需要从receiveBuffer中读取的字节数
+                            int appendBytesCount = currentFrameModel.getOriginDataBytesLength() - currentFrameModel.getOrigiDataBytes().Length;
+                            // 如果当前接收的字节数据长度大于完整帧剩余需要的字节数，则重新构建原始字节数组,并缓存剩余字节数组
+                            if (readByteLength >= appendBytesCount)
+                            {
+                                // 1、读取并设置剩余字节数组
+                                byte[] appendBytes = new byte[appendBytesCount];
+                                Buffer.BlockCopy(receiveBuffer, 0, appendBytes, 0, appendBytesCount);
+
+                                // 2、将剩余字节数组以及原有的字节数组拼接变为新数组
+                                byte[] perfectOriginBytes = new byte[appendBytes.Length + currentFrameModel.getOrigiDataBytes().Length];
+                                Buffer.BlockCopy(currentFrameModel.getOrigiDataBytes(), 0, perfectOriginBytes, 0, currentFrameModel.getOrigiDataBytes().Length);
+                                Buffer.BlockCopy(appendBytes, 0, perfectOriginBytes, currentFrameModel.getOrigiDataBytes().Length, appendBytes.Length);
+                                currentFrameModel.setOrigiDataBytes(perfectOriginBytes);
+                                currentFrameModel.setStatus("3");
+
+                                // 3、执行业务处理
+                                receiveHandler(currentFrameModel, obj);
+
+                                if (readByteLength > appendBytes.Length)
+                                {
+                                    // 4、处理当前receiveBuffer中剩余字节数组,进入缓存
+                                    resetFrameModelBasic();
+                                    byte[] restBytes = new byte[receiveBuffer.Length - appendBytesCount];
+                                    Buffer.BlockCopy(receiveBuffer, appendBytesCount, restBytes, 0, restBytes.Length);
+                                    currentFrameModel.setRestBytes(restBytes);
+                                    currentFrameModel.setStatus("4");
+                                    if (restBytes.Length > 10)
+                                    {
+                                        // 尝试解析剩余字节
+                                        parseBytes(restBytes.Length, restBytes, obj);
+                                    }
+                                }
+                                else
+                                {
+                                    resetFrameModelAll();
+                                }
+                            }
+                            else
+                            {
+                                // 1、不够则继续缓存，重新构建缓存字节数组,读取并设置剩余字节数组
+                                byte[] appendBytes = new byte[receiveBuffer.Length];
+                                Buffer.BlockCopy(receiveBuffer, 0, appendBytes, 0, receiveBuffer.Length);
+
+                                // 2、将追加的字节数组以及原有的字节数组拼接变为新数组
+                                byte[] perfectOriginBytes = new byte[appendBytes.Length + currentFrameModel.getOrigiDataBytes().Length];
+                                Buffer.BlockCopy(currentFrameModel.getOrigiDataBytes(), 0, perfectOriginBytes, 0, currentFrameModel.getOrigiDataBytes().Length);
+                                Buffer.BlockCopy(appendBytes, 0, perfectOriginBytes, currentFrameModel.getOrigiDataBytes().Length, appendBytes.Length);
+                                currentFrameModel.setOrigiDataBytes(perfectOriginBytes);
+                                currentFrameModel.setStatus("2");
+                            }
+
+                        }
+                        else if (currentFrameModel.getStatus() == "4") // 存在剩余，此时status必须为4，且restBytes不为空，其他都为初始值
+                        {
+                            // 将当前缓存数组restBytes和新接收的数组receiveBuffer数组合并
+                            byte[] sumBytes = new byte[currentFrameModel.getRestBytes().Length + receiveBuffer.Length];
+                            // 拷贝缓存字节数组
+                            Buffer.BlockCopy(currentFrameModel.getRestBytes(), 0, sumBytes, 0, currentFrameModel.getRestBytes().Length);
+                            // 拷贝新接收的字节数组
+                            Buffer.BlockCopy(receiveBuffer, 0, sumBytes, currentFrameModel.getRestBytes().Length, receiveBuffer.Length);
+                            parseBytes(readByteLength, sumBytes, obj);
+                        }
+
+                        Array.Clear(receiveBuffer, 0, receiveBuffer.Length);
+                    }
+                    //catch (ThreadAbortException e)
+                    //{
+                    //    // 重置线程状态为Abort
+                    //    Thread.ResetAbort();
+                    //}
+                    catch (SocketException e)
+                    {
+                        // 判断socket连接状态，如果是非连接，则直接终止接收线程
+                        try
+                        {
+                            isSocketConnected(socket);
+                            // 处于连接
+                        }
+                        catch (SocketException ex)
+                        {
+                            // 代码 10035也保证socket连接状态正常
+                            if (ex.NativeErrorCode.Equals(10035))
+                            {
+                                continue;
+                            }
+
+                            // 否则直接结束当前socket接收数据线程
+                            return;
+                        }
+
+                    }
+                    catch (Exception e)
+                    {
+                        if (e is SocketException)
+                        {
+                            // 设置主窗体连接状态
+                            if (null != Main_Form.main_Form)
+                            {
+                                Main_Form.main_Form.result_label.Invoke(new MethodInvoker(delegate ()
+                                {
+                                    Main_Form.main_Form.result_label.Text = "连接中......";
+                                }));
+                            }
+
+                            // 设置登录窗体连接状态
+                            Login_Register_Form login_Register_Form = (Login_Register_Form)obj;
+                            login_Register_Form.connect_label.Invoke(new MethodInvoker(delegate ()
+                            {
+                                login_Register_Form.connect_label.Text = "连接中......";
+                            }));
+                        }
+
+                        resetFrameModelAll();
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("客户端与服务端socket连接状态异常，请尝试关闭应用后重启");
+            }
+        }
+
+        // 解析数据
+        public static void parseBytes(int readByteLength, byte[] receiveBuffer, object obj)
+        {
+            // 解析字节总长度4B
+            if (currentFrameModel.getSumLength() == 0)
+            {
+                int index = currentFrameModel.getIndex();
+                int value = (int)((receiveBuffer[index] & 0xFF)
+                    | ((receiveBuffer[index + 1] & 0xFF) << 8)
+                    | ((receiveBuffer[index + 2] & 0xFF) << 16)
+                    | ((receiveBuffer[index + 3] & 0xFF) << 24));
+
+                currentFrameModel.setSumLength(IPAddress.NetworkToHostOrder(value) - 4);
+                currentFrameModel.setIndex(index + 4);
+            }
+
+            // 解析帧类型 1B
+            if (currentFrameModel.getFrameType() == (byte)0)
+            {
+                currentFrameModel.setFrameType(receiveBuffer[currentFrameModel.getIndex()]);
+                currentFrameModel.setIndex(currentFrameModel.getIndex() + 1);
+            }
+
+            // 解析是否为结尾帧 1B
+            if (currentFrameModel.getEndFrame() == (byte)0)
+            {
+                currentFrameModel.setEndFrame(receiveBuffer[currentFrameModel.getIndex()]);
+                currentFrameModel.setIndex(currentFrameModel.getIndex() + 1);
+            }
+
+            // 解析实际数据内容长度 4B
+            if (currentFrameModel.getOriginDataBytesLength() == (short)0)
+            {
+                int index = currentFrameModel.getIndex();
+                int value = (int)((receiveBuffer[index] & 0xFF)
+                    | ((receiveBuffer[index + 1] & 0xFF) << 8)
+                    | ((receiveBuffer[index + 2] & 0xFF) << 16)
+                    | ((receiveBuffer[index + 3] & 0xFF) << 24));
+                currentFrameModel.setOriginDataBytesLength(IPAddress.NetworkToHostOrder(value));
+                currentFrameModel.setIndex(index + 4);
+            }
+
+            // 解析数据
+            if (currentFrameModel.getOrigiDataBytes() == null)
+            {
+                int index = currentFrameModel.getIndex();
+                
+                // 如果真实字节数据长度刚好全部存储与receiveBuffer中，即解析完成，则设置其状态
+                if ((readByteLength - 10) == currentFrameModel.getOriginDataBytesLength())
+                {
+                    byte[] dataBytes = new byte[currentFrameModel.getOriginDataBytesLength()];
+                    Buffer.BlockCopy(receiveBuffer, index, dataBytes, 0, currentFrameModel.getOriginDataBytesLength());
+                    currentFrameModel.setOrigiDataBytes(dataBytes);
+
+                    currentFrameModel.setIndex(0);
+                    currentFrameModel.setStatus("3"); // 处理完成
+                }
+                else if ((readByteLength - 10) > currentFrameModel.getOriginDataBytesLength()) // 大于真实字节数据长度，则发生了半包,存在剩余字节
+                {
+                    // 处理正常数据
+                    byte[] dataBytes = new byte[currentFrameModel.getOriginDataBytesLength()];
+                    Buffer.BlockCopy(receiveBuffer, index, dataBytes, 0, currentFrameModel.getOriginDataBytesLength());
+                    currentFrameModel.setOrigiDataBytes(dataBytes);
+                    currentFrameModel.setStatus("3");
+
+                    // 执行业务处理
+                    receiveHandler(currentFrameModel, obj);
+
+                    // 处理剩余部分字节
+                    resetFrameModelBasic();
+                    byte[] restBytes = new byte[receiveBuffer.Length - (10 + currentFrameModel.getOrigiDataBytes().Length)];
+                    Buffer.BlockCopy(receiveBuffer, (10 + currentFrameModel.getOrigiDataBytes().Length), restBytes, 0, restBytes.Length);
+                    currentFrameModel.setIndex(0);
+                    currentFrameModel.setStatus("4"); // 存在剩余
+                    currentFrameModel.setRestBytes(restBytes); // 记录剩余字节
+                    if (restBytes.Length > 10)
+                    {
+                        // 尝试解析剩余字节
+                        parseBytes(restBytes.Length, restBytes, obj);
+                    }
+                }
+                else if ((readByteLength - 10) < currentFrameModel.getOriginDataBytesLength()) // 小于真实字节数据长度，不能进行处理，等待下次继续接收
+                {
+                    // 处理正常数据
+                    byte[] dataBytes = new byte[readByteLength - 10];
+                    Buffer.BlockCopy(receiveBuffer, index, dataBytes, 0, readByteLength - 10);
+                    currentFrameModel.setOrigiDataBytes(dataBytes);
+
+                    currentFrameModel.setIndex(0);
+                    currentFrameModel.setStatus("2"); // 处理中
+                }
+            }
+        }
+
+        // 字节数据处理
+        private static void receiveHandler(FrameModel perfectFrameModel, object obj)
+        {
+            if (!(perfectFrameModel.getStatus() == "3"))
+            {
+                return;
+            }
+
+            StringBuilder stringBuilder = new StringBuilder("");
+            stringBuilder.Append(Encoding.UTF8.GetString(perfectFrameModel.getOrigiDataBytes(), 0, perfectFrameModel.getOriginDataBytesLength())); // 获取帧数据
+            perfectFrameModel.setData(stringBuilder.ToString());
+
+            // 刷新用户列表帧或搜索用户帧，返回为数组json
+            if (perfectFrameModel.getFrameType() == (byte)3 || perfectFrameModel.getFrameType() == (byte) 12)
+            {
+                List<UserModel> userModels = (List<UserModel>)JsonConvert.DeserializeObject(perfectFrameModel.getData(), typeof(List<UserModel>));
+                dataHandler(perfectFrameModel.getFrameType(), NetResponse.of(NetResponse.Response.SUCCESS, userModels, "Success", ""), obj);
+                return;
+            }
+
+            // 个人网盘帧文件夹操作
+            if ((perfectFrameModel.getFrameType() == (byte)6) 
+                || (perfectFrameModel.getFrameType() == (byte)7)
+                || (perfectFrameModel.getFrameType() == (byte)8))
+            {
+                FileDto fileDto = JsonConvert.DeserializeObject<FileDto>(perfectFrameModel.getData());
+                dataHandler(perfectFrameModel.getFrameType(), NetResponse.of(NetResponse.Response.SUCCESS, fileDto, "Success", ""), obj);
+                return;
+            }
+
+            // 个人网盘文件删除操作
+            if (perfectFrameModel.getFrameType() == (byte)11)
+            {
+                List<long> fileIdList = (List<long>)JsonConvert.DeserializeObject(perfectFrameModel.getData(), typeof(List<long>));
+                dataHandler(perfectFrameModel.getFrameType(), NetResponse.of(NetResponse.Response.SUCCESS, fileIdList, "Success", ""), obj);
+                return;
+            }
+
+            // 转换数据并追加；
+            CommonRes commonRes = (CommonRes)JsonConvert.DeserializeObject(perfectFrameModel.getData(), typeof(CommonRes));
+            dataHandler(perfectFrameModel.getFrameType(), NetResponse.of(NetResponse.Response.SUCCESS, commonRes, commonRes.getMessage(), ""), obj);
+        }
+
+        // 业务数据处理
+        public static void dataHandler(byte frameType, NetResponse netResponse, object obj)
+        {
+            if (frameType == (byte)0) // 0：登录帧响应
+            {
+                Login_Register_Form.loginDelegateHandler(obj, netResponse);
+
+            }
+            else if (frameType == (byte)1) // 1： 登出帧响应
+            {
+                ((Login_Register_Form)obj).Invoke(new MethodInvoker(delegate () { ((Login_Register_Form)obj).Show(); }));
+            }
+            else if (frameType == (byte)2) // 2： 文本帧响应
+            {
+                Main_Form.main_Form.message_richTextBox.Invoke(new MethodInvoker(delegate ()
+                {
+                    Main_Form.main_Form.message_richTextBox.AppendText("[ " + DateTime.Now.ToLocalTime().ToString() + " ] 来自用户 [ " + ((CommonRes)netResponse.getCommonRes()).getUserName() + " ] 数据: "
+                    + ((CommonRes)netResponse.getCommonRes()).getMessage() + "\r\n");
+                }));
+
+                // 由于文件在线传输帧被服务端以聊天服务的文本帧发送，此处需要判断是否为在线文件传输帧
+                FileService.isNeedToFileOnlineTransport(netResponse);
+
+            }
+            else if (frameType == (byte)3) // 返回请求帧为3的数据，刷新在线用户列表
+            {
+                List<UserModel> list = (List<UserModel>)netResponse.getCommonRes();
+                Main_Form.main_Form.user_list_dataGridView.Invoke(new MethodInvoker(delegate ()
+                {
+                    Main_Form.main_Form.user_list_dataGridView.Rows.Clear();
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        Main_Form.main_Form.user_list_dataGridView.Rows.Add();
+                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[0].Value = i + 1;
+                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[1].Value = list[i].getUserName();
+                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[2].Value = Utils.ToDateTime(list[i].getLastLoginDate());
+                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[3].Value = Utils.ToDateTime(list[i].getRegisterDate());
+                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[4].Value = (list[i].getStatus() == "1" ? "在线" : "未知状态");
+                    }
+                }));
+            }
+            else if (frameType == (byte)4) // 4: 注册帧响应
+            {
+                Register_Form.registerDelegateHandler(obj, netResponse);
+            }
+            else if (frameType == (byte)5) // 5: 心跳帧响应
+            {
+                Main_Form.main_Form.result_label.Invoke(new MethodInvoker(delegate ()
+                {
+                    if ("HEART_RESPONSE".Equals(((CommonRes)netResponse.getCommonRes()).getMessage()))
+                    {
+                        Main_Form.main_Form.result_label.Text = "网络连接正常......";
+                    }
+                }));
+            }
+            else if (frameType == (byte)6) // 6: 个人网盘文件夹刷新
+            {
+                FileDto fileDto = (FileDto)netResponse.getCommonRes();
+                // 设置当前文件夹下的文件数量
+                Main_Form.main_Form.file_sum_count_label.Invoke(new MethodInvoker(delegate ()
+                {
+                    Main_Form.main_Form.file_sum_count_label.Text = fileDto.getFileCount().ToString();
+                }));
+
+                Main_Form.main_Form.personal_file_treeView.Invoke(new MethodInvoker(delegate ()
+                {
+                    // 判断当前节点是否为最顶层节点
+                    if (fileDto.getPid() == -1)
+                    {
+                        // 清空所有节点
+                        Main_Form.main_Form.personal_file_treeView.Nodes.Clear();
+                        // 创建根节点
+                        TreeNode rootTreeNode = Main_Form.main_Form.personal_file_treeView.Nodes.Add(fileDto.getFileName());
+                        rootTreeNode.Tag = fileDto;
+
+                        // 判断是否有子节点
+                        if (null != fileDto.getChildFileList() && fileDto.getChildFileList().Count > 0)
+                        {
+                            List<FileDto> list = fileDto.getChildFileList();
+                            // 创建子节点
+                            for (int i = 0; i < list.Count; i++)
+                            {
+                                TreeNode childTreeNode = rootTreeNode.Nodes.Add(list[i].getFileName());
+                                childTreeNode.Tag = list[i];
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // 处理子文件夹还是处理包含的文件
+                        if (fileDto.getHasChild() == "Y")
+                        {
+                            // 含有子文件夹则显示子文件夹  
+                            appendFileNode(fileDto);
+                        }
+                        else
+                        {
+                            // 处理子文件集合
+                            fileListHandle(fileDto);
+                        }
+
+                    }
+                    Main_Form.main_Form.personal_file_treeView.ExpandAll();
+                }));
+            }
+            else if (frameType == (byte)7) // 7: 个人网盘文件夹创建
+            {
+                FileDto fileDto = (FileDto)netResponse.getCommonRes();
+
+                if (fileDto.getRepeatCreate() == "Y")
+                {
+                    File_Create_Form.file_Create_Form.create_description_label.Invoke(new MethodInvoker(delegate ()
+                    {
+                        File_Create_Form.file_Create_Form.create_description_label.Visible = true;
+                        File_Create_Form.file_Create_Form.create_description_label.Text = "创建的文件夹已存在";
+                    }));
+                }
+                else if (fileDto.getFileCount() > 0)
+                {
+                    File_Create_Form.file_Create_Form.create_description_label.Invoke(new MethodInvoker(delegate ()
+                    {
+                        File_Create_Form.file_Create_Form.create_description_label.Visible = true;
+                        File_Create_Form.file_Create_Form.create_description_label.Text = "当前文件夹下已含有文件，无法创建文件夹";
+                    }));
+                }
+                else
+                {
+                    File_Create_Form.file_Create_Form.create_description_label.Invoke(new MethodInvoker(delegate ()
+                    {
+                        File_Create_Form.file_Create_Form.create_description_label.Visible = false;
+                    }));
+                    File_Create_Form.file_Create_Form.Invoke(new MethodInvoker(delegate () { File_Create_Form.file_Create_Form.Close(); }));
+                    // 创建成功刷新文件夹,从头开始刷新
+                    UserModel userModel = new UserModel();
+                    userModel.setRefreshFile("true");
+                    userModel.setUserName(Main_Form.main_Form.commonRes.getUserName());
+                    userModel.setFileName(Main_Form.main_Form.commonRes.getUserName());
+                    userModel.setFilePath(Main_Form.main_Form.commonRes.getUserName());
+                    userModel.setCurrentPage(1);
+                    userModel.setPageSize(10);
+                    NetServiceContext.sendMessageNotWaiting(6, JsonConvert.SerializeObject(userModel), obj);
+                }
+            }
+            else if (frameType == (byte)8) // 个人网盘文件夹名称修改
+            {
+                File_Create_Form.file_Create_Form.create_description_label.Invoke(new MethodInvoker(delegate ()
+                {
+                    File_Create_Form.file_Create_Form.create_description_label.Visible = false;
+                }));
+                File_Create_Form.file_Create_Form.Invoke(new MethodInvoker(delegate () { File_Create_Form.file_Create_Form.Close(); }));
+
+                FileDto fileDto = (FileDto)netResponse.getCommonRes();
+                Main_Form.main_Form.personal_file_treeView.Invoke(new MethodInvoker(delegate ()
+                {
+                    // 根据当前节点fileDto判断处于文件夹树中哪一个节点下,追加相应节点
+                    appendFileNode(fileDto);
+                    Main_Form.main_Form.personal_file_treeView.ExpandAll();
+                }));
+            }
+            else if (frameType == (byte)11)
+            {
+                List<long> list = (List<long>)netResponse.getCommonRes();
+                Main_Form.main_Form.file_list_dataGridView.Invoke(new MethodInvoker(delegate ()
+                {
+                    int count = Main_Form.main_Form.file_list_dataGridView.Rows.Count;
+                    if (count > 0)
+                    {
+                        // 循环遍历删除行记录
+                        for (int i = 0; i < list.Count; i++)
+                        {
+                            for (int j = (count - 1); j >= 0; j--)
+                            {
+                                string tag = Main_Form.main_Form.file_list_dataGridView.Rows[j].Cells[9].Value.ToString();
+                                if (tag == list[i].ToString())
+                                {
+                                    Main_Form.main_Form.file_list_dataGridView.Rows.RemoveAt(j);
+                                    count = Main_Form.main_Form.file_list_dataGridView.Rows.Count;
+                                }
+                            }
+                        }
+                    }
+
+                }));
+
+                // 恢复button的权限
+                Main_Form.main_Form.all_select_button.Invoke(new MethodInvoker(delegate ()
+                {
+                    Main_Form.main_Form.all_select_button.Enabled = true;
+                }));
+
+                Main_Form.main_Form.all_cancel_select_button.Invoke(new MethodInvoker(delegate ()
+                {
+                    Main_Form.main_Form.all_cancel_select_button.Enabled = true;
+                }));
+
+                Main_Form.main_Form.all_select_download_button.Invoke(new MethodInvoker(delegate ()
+                {
+                    Main_Form.main_Form.all_select_download_button.Enabled = true;
+                }));
+
+                Main_Form.main_Form.all_select_delete_button.Invoke(new MethodInvoker(delegate ()
+                {
+                    Main_Form.main_Form.all_select_delete_button.Enabled = true;
+                }));
+
+                Main_Form.main_Form.all_file_refresh_button.Invoke(new MethodInvoker(delegate ()
+                {
+                    Main_Form.main_Form.all_file_refresh_button.Enabled = true;
+                }));
+            }
+            else if (frameType == (byte)12)
+            {
+                List<UserModel> list = (List<UserModel>)netResponse.getCommonRes();
+                Main_Form.main_Form.user_list_dataGridView.Invoke(new MethodInvoker(delegate ()
+                {
+                    Main_Form.main_Form.user_list_dataGridView.Rows.Clear();
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        Main_Form.main_Form.user_list_dataGridView.Rows.Add();
+                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[0].Value = i + 1;
+                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[1].Value = list[i].getUserName();
+                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[2].Value = Utils.ToDateTime(list[i].getLastLoginDate());
+                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[3].Value = Utils.ToDateTime(list[i].getRegisterDate());
+                        Main_Form.main_Form.user_list_dataGridView.Rows[i].Cells[4].Value = (list[i].getStatus() == "1" ? "在线" : "未知状态");
+                    }
+                }));
+            }
+        }
 
         // 处理当前文件夹下的子文件夹
         public static void appendFileNode(FileDto fileDto)
@@ -1230,7 +1075,7 @@ namespace chat_service.util
             int currentNodeChildNodeCount = treeNode.Nodes.Count; // 当前节点下的子节点数量
             if (currentNodeChildNodeCount == 0) // == 0：表示当前节点下子节点为空，则直接追加节点
             {
-                FileDto dto = (FileDto)treeNode.Tag;
+                FileDto dto = (FileDto) treeNode.Tag;
                 if (dto.getId() == fileDto.getId())
                 {
                     // 如果当前节点子节点不为空，那就扩展字节点
@@ -1298,7 +1143,30 @@ namespace chat_service.util
             }
         }
 
+        public static void resetFrameModelBasic()
+        {
+            currentFrameModel.setSumLength(0);
+            currentFrameModel.setFrameType((byte)0);
+            currentFrameModel.setEndFrame((byte)0);
+            currentFrameModel.setIndex(0);
+            currentFrameModel.setOriginDataBytesLength(0);
+            currentFrameModel.setOrigiDataBytes(null);
+            currentFrameModel.setData("");
+            currentFrameModel.setStatus("1");
+        }
 
+        public static void resetFrameModelAll()
+        {
+            currentFrameModel.setSumLength(0);
+            currentFrameModel.setFrameType((byte)0);
+            currentFrameModel.setEndFrame((byte)0);
+            currentFrameModel.setIndex(0);
+            currentFrameModel.setOriginDataBytesLength(0);
+            currentFrameModel.setOrigiDataBytes(null);
+            currentFrameModel.setData("");
+            currentFrameModel.setRestBytes(null);
+            currentFrameModel.setStatus("1");
+        }
 
         // 判断socket连接状态(发送0字节判断socket连接状态)
         public static bool isSocketConnected(Socket socket)
@@ -1335,7 +1203,7 @@ namespace chat_service.util
         // 关闭当前Socket
         public static void close()
         {
-            if (socket == null)
+            if(socket == null)
             {
                 return;
             }
@@ -1346,6 +1214,5 @@ namespace chat_service.util
                 socket.Close();
             }
         }
-
     }
 }
