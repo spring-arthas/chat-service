@@ -25,6 +25,7 @@ namespace chat_service
     {
         private readonly SemaphoreSlim uploadTransferSlots = new SemaphoreSlim(3, 3);
         private readonly SemaphoreSlim downloadTransferSlots = new SemaphoreSlim(3, 3);
+        private readonly SemaphoreSlim fileListRequestGate = new SemaphoreSlim(1, 1);
         // 当前登录用户数据
         public CommonRes commonRes = null;
 
@@ -34,8 +35,22 @@ namespace chat_service
         // 当前目录下已加载的文件列表（新协议），用于获取原始文件大小等信息
         private List<chat_service.protocol.NetFileDto> currentFileList = new List<chat_service.protocol.NetFileDto>();
 
+        // 当前文件列表实际使用的目录过滤条件。null 表示“全部文件”，与树的右键操作节点分离。
+        private long? currentFileListDirectoryId = null;
+        private string currentFileListDirectoryName = "全部文件";
+
+        // 文件列表请求版本；快速切换目录或翻页时，旧请求不得覆盖新结果。
+        private int fileListRequestVersion = 0;
+
         // 当前正在查看详情的文件，避免快速切换时旧请求覆盖新选择。
         private long selectedDetailFileId = -1;
+
+        // 当前详情对应的完整文件信息，供视频在线播放入口复用。
+        private chat_service.protocol.NetFileDto selectedFileDetail = null;
+
+        // 单窗口播放，避免重复点击为同一用户建立多个并发视频流。
+        private VideoPlayerForm activeVideoPlayer = null;
+        private long activeVideoFileId = -1;
 
         // 当前窗体类实例
         public static Main_Form main_Form = null;
@@ -924,19 +939,18 @@ namespace chat_service
                     this.folder_create_path_label.Visible = true;
                     this.folder_create_path_label.Text = fileDto.FilePath;
                     this.file_sum_count_label.Visible = true;
-                    this.file_sum_count_label.Text = "0";
                 }
             }
 
             // 刷新所选中节点文件下的个人网盘列表，
             if (e.Button == MouseButtons.Left)
             {
-                // 每次点击新的文件夹节点，重置当前分页为第一页
-                currentPage = 1;
                 Point ClickPoint = new Point(e.X, e.Y);
                 TreeNode CurrentNode = this.personal_file_treeView.GetNodeAt(ClickPoint);
                 if (null != CurrentNode)
                 {
+                    // 只有确实选中目录时才重置页码；点击树空白区域不能改变当前列表状态。
+                    currentPage = 1;
                     currentSelectedNode = CurrentNode;
                     chat_service.protocol.NetFileDto fileDto = (chat_service.protocol.NetFileDto)CurrentNode.Tag;
                     this.folder_create_time_label.Visible = true;
@@ -945,57 +959,113 @@ namespace chat_service
                     this.folder_create_path_label.Text = fileDto.FilePath;
                     this.file_sum_count_label.Visible = true;
                     this.file_sum_count_label.Text = "0";
-                    this.UpdateDirectoryHeader(fileDto.FileName);
-
-                    // 使用新协议加载该目录下的文件列表
-                    this.loadFileList(fileDto.Id);
+                    // 顶层目录代表“全部文件”，查询时不能携带 dirId；子目录才按目录 ID 过滤。
+                    long? directoryId = GetDirectoryFilter(CurrentNode);
+                    currentFileListDirectoryName = directoryId.HasValue ? fileDto.FileName : "全部文件";
+                    this.loadFileList(directoryId);
                 }
             }
 
         }
 
-        // 使用新协议加载指定目录下的文件分页列表
-        private void loadFileList(long dirId)
+        // 将树节点转换为文件列表查询条件：顶层节点不带目录 ID，子节点按实际 ID 查询。
+        private long? GetDirectoryFilter(TreeNode node)
+        {
+            if (node == null || node.Parent == null) return null;
+            chat_service.protocol.NetFileDto directory = node.Tag as chat_service.protocol.NetFileDto;
+            return directory != null && directory.Id > 0 ? (long?)directory.Id : null;
+        }
+
+        // 使用新协议加载文件分页列表。directoryId 为 null 时查询当前用户的全部文件。
+        private void loadFileList(long? directoryId)
         {
             selectedDetailFileId = -1;
             ResetFileDetail();
-            string selectedDirectoryName = "—";
-            if (dirId <= 0)
+
+            long? queryDirectoryId = directoryId.HasValue && directoryId.Value > 0
+                ? directoryId
+                : (long?)null;
+            bool scopeChanged = currentFileListDirectoryId != queryDirectoryId;
+            currentFileListDirectoryId = queryDirectoryId;
+            if (!queryDirectoryId.HasValue)
             {
-                // 全部文件视图：展示当前用户在所有目录下上传的文件
-                selectedDirectoryName = "（全部文件）";
+                currentFileListDirectoryName = "全部文件";
                 UpdateDirectoryHeader("全部文件");
             }
-            else if (currentSelectedNode != null && currentSelectedNode.Tag is chat_service.protocol.NetFileDto)
+            else
             {
-                chat_service.protocol.NetFileDto selectedDirectory = (chat_service.protocol.NetFileDto)currentSelectedNode.Tag;
-                if (selectedDirectory.Id == dirId && !string.IsNullOrWhiteSpace(selectedDirectory.FileName))
+                if (scopeChanged && currentSelectedNode != null &&
+                    currentSelectedNode.Tag is chat_service.protocol.NetFileDto)
                 {
-                    selectedDirectoryName = selectedDirectory.FileName;
+                    chat_service.protocol.NetFileDto selectedDirectory =
+                        (chat_service.protocol.NetFileDto)currentSelectedNode.Tag;
+                    if (selectedDirectory.Id == queryDirectoryId.Value &&
+                        !string.IsNullOrWhiteSpace(selectedDirectory.FileName))
+                    {
+                        currentFileListDirectoryName = selectedDirectory.FileName;
+                    }
                 }
+                UpdateDirectoryHeader(currentFileListDirectoryName);
             }
+
+            string selectedDirectoryName = queryDirectoryId.HasValue
+                ? currentFileListDirectoryName
+                : "（全部文件）";
+            int requestedPage = Math.Max(1, Main_Form.currentPage);
+            Main_Form.currentPage = requestedPage;
+            int requestVersion = Interlocked.Increment(ref fileListRequestVersion);
+            SetFilePaginationLoading();
+
             Thread listThread = new Thread(() =>
             {
                 try
                 {
-                    chat_service.protocol.FilePageResult page = chat_service.protocol.DirectoryService.Shared
-                        .FetchFileList(dirId, "", Main_Form.currentPage, Main_Form.pageSize);
+                    chat_service.protocol.FilePageResult page;
+                    fileListRequestGate.Wait();
+                    try
+                    {
+                        // SocketManager 当前按响应帧类型分发；同类列表请求必须串行，避免响应串线。
+                        if (requestVersion != Volatile.Read(ref fileListRequestVersion)) return;
+                        page = chat_service.protocol.DirectoryService.Shared
+                            .FetchFileList(queryDirectoryId, "", requestedPage, Main_Form.pageSize);
+                    }
+                    finally
+                    {
+                        fileListRequestGate.Release();
+                    }
+
+                    if (requestVersion != Volatile.Read(ref fileListRequestVersion)) return;
+
+                    int totalPages = page.TotalPage <= 0
+                        ? 0
+                        : (page.TotalPage > int.MaxValue ? int.MaxValue : (int)page.TotalPage);
+
+                    // 删除末页最后一条记录等场景会让当前页越界，回退后重新获取有效末页。
+                    if (totalPages > 0 && requestedPage > totalPages)
+                    {
+                        this.file_list_dataGridView.BeginInvoke(new MethodInvoker(delegate ()
+                        {
+                            if (requestVersion != Volatile.Read(ref fileListRequestVersion)) return;
+                            Main_Form.currentPage = totalPages;
+                            this.loadFileList(queryDirectoryId);
+                        }));
+                        return;
+                    }
+
+                    int responsePage = totalPages == 0
+                        ? 1
+                        : Math.Max(1, Math.Min(page.CurrentPage > 0 ? page.CurrentPage : requestedPage, totalPages));
+                    int responsePageSize = page.PageSize > 0 ? page.PageSize : Main_Form.pageSize;
 
                     this.file_list_dataGridView.BeginInvoke(new MethodInvoker(delegate ()
                     {
+                        if (requestVersion != Volatile.Read(ref fileListRequestVersion)) return;
+
                         this.file_list_dataGridView.Rows.Clear();
-                        // 更新文件总数
-                        if (this.file_sum_count_label.Visible)
-                        {
-                            this.file_sum_count_label.Text = page.TotalCount.ToString();
-                        }
-                        // 记录总页数并校正当前页越界
-                        if (page.TotalPage > 0)
-                        {
-                            Main_Form.sumPageCount = (int)page.TotalPage;
-                            if (Main_Form.currentPage > Main_Form.sumPageCount)
-                                Main_Form.currentPage = Main_Form.sumPageCount;
-                        }
+                        Main_Form.currentPage = responsePage;
+                        Main_Form.sumPageCount = totalPages;
+                        this.file_sum_count_label.Text = page.TotalCount.ToString();
+                        UpdateFilePagination(page.TotalCount, responsePage, totalPages);
 
                         List<chat_service.protocol.NetFileDto> list = page.RecordList;
                         this.currentFileList = list ?? new List<chat_service.protocol.NetFileDto>();
@@ -1006,7 +1076,8 @@ namespace chat_service
                             {
                                 this.file_list_dataGridView.Rows.Add();
                                 // 复用旧列结构：0=checkbox,1=序号,2=文件名,3=文件路径,4=文件大小,5=上传时间,6=状态,7=下载按钮,9=文件标识(id)
-                                this.file_list_dataGridView.Rows[i].Cells[1].Value = i + 1;
+                                this.file_list_dataGridView.Rows[i].Cells[1].Value =
+                                    ((long)responsePage - 1L) * responsePageSize + i + 1L;
                                 this.file_list_dataGridView.Rows[i].Cells[2].Value = filedto.FileName;
                                 this.file_list_dataGridView.Rows[i].Cells["ParentDirectoryColumn"].Value =
                                     string.IsNullOrWhiteSpace(filedto.ParentDirName) ? selectedDirectoryName : filedto.ParentDirName;
@@ -1027,6 +1098,8 @@ namespace chat_service
                 {
                     this.BeginInvoke(new MethodInvoker(delegate ()
                     {
+                        if (requestVersion != Volatile.Read(ref fileListRequestVersion)) return;
+                        ShowFilePaginationError();
                         this.result_label.Text = "文件列表加载失败: " + ex.Message;
                     }));
                 }
@@ -1157,6 +1230,7 @@ namespace chat_service
         private void LoadFileDetail(long fileId, string fileName)
         {
             selectedDetailFileId = fileId;
+            selectedFileDetail = null;
             ShowFileDetailLoading(fileName);
             Thread detailThread = new Thread(() =>
             {
@@ -1192,7 +1266,7 @@ namespace chat_service
             string extension = Path.GetExtension(detail.FileName ?? "").ToLowerInvariant();
             bool isImage = extension == ".jpg" || extension == ".jpeg" || extension == ".png"
                 || extension == ".gif";
-            bool isVideo = extension == ".mp4" || extension == ".m4v" || extension == ".mov";
+            bool isVideo = chat_service.protocol.MediaPlaybackService.IsPlayableVideo(detail.FileName);
             if (!isImage && !isVideo)
             {
                 ShowFilePreviewUnavailable("此文件暂不支持预览");
@@ -1266,27 +1340,64 @@ namespace chat_service
 
         private string ResolveMediaPreviewBaseAddress()
         {
-            string configured = "";
-            try
+            return chat_service.protocol.MediaPlaybackService.ResolveBaseAddress();
+        }
+
+        private void OpenSelectedVideoPlayer()
+        {
+            chat_service.protocol.NetFileDto detail = selectedFileDetail;
+            if (detail == null || detail.Id <= 0
+                || !chat_service.protocol.MediaPlaybackService.IsPlayableVideo(detail.FileName))
             {
-                configured = XmlConfigUtils.GetValue("remoteMediaServiceAddress");
+                this.result_label.Text = "请选择支持在线播放的视频文件。";
+                return;
             }
-            catch
+            if (detail.IsDeleted || !detail.IsExistBoolean)
             {
-                configured = "";
+                this.result_label.Text = "视频文件不存在，无法在线播放。";
+                return;
             }
-            if (!string.IsNullOrWhiteSpace(configured))
+            if (currentUser == null || string.IsNullOrWhiteSpace(currentUser.TransferToken))
             {
-                return configured.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
-                    || configured.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
-                    ? configured : "http://" + configured;
+                this.result_label.Text = "登录凭据缺失，请重新登录后再播放。";
+                return;
             }
 
-            string controlAddress = NetServiceContext.remoteServiceAddress ?? "";
-            int separator = controlAddress.LastIndexOf(':');
-            string host = separator > 0 ? controlAddress.Substring(0, separator) : controlAddress;
-            if (string.IsNullOrWhiteSpace(host)) host = "127.0.0.1";
-            return "http://" + host + ":10188";
+            try
+            {
+                if (activeVideoPlayer != null && !activeVideoPlayer.IsDisposed)
+                {
+                    if (activeVideoFileId == detail.Id)
+                    {
+                        activeVideoPlayer.Activate();
+                        return;
+                    }
+                    activeVideoPlayer.Close();
+                }
+
+                VideoPlayerForm player = new VideoPlayerForm(
+                    detail.Id,
+                    detail.FileName,
+                    currentUser.TransferToken,
+                    chat_service.protocol.MediaPlaybackService.ResolveBaseAddress());
+                activeVideoPlayer = player;
+                activeVideoFileId = detail.Id;
+                player.FormClosed += delegate
+                {
+                    if (ReferenceEquals(activeVideoPlayer, player))
+                    {
+                        activeVideoPlayer = null;
+                        activeVideoFileId = -1;
+                    }
+                };
+                player.Show(this);
+            }
+            catch (Exception ex)
+            {
+                activeVideoPlayer = null;
+                activeVideoFileId = -1;
+                this.result_label.Text = "播放器启动失败: " + ex.Message;
+            }
         }
          
         // 兼容旧文件列表按钮；现代布局使用统一的下拉操作列。
@@ -1446,37 +1557,34 @@ namespace chat_service
 
         private void RefreshCurrentFileList()
         {
-            if (currentSelectedNode != null && currentSelectedNode.Tag is chat_service.protocol.NetFileDto)
-            {
-                loadFileList(((chat_service.protocol.NetFileDto)currentSelectedNode.Tag).Id);
-            }
+            loadFileList(GetCurrentListDirId());
         }
 
         // 上一页
         private void prePage_button_Click(object sender, EventArgs e)
         {
-            if (currentPage > 1)
-            {
-                currentPage = currentPage - 1;
-            }
-            this.loadFileList(GetCurrentListDirId());
+            NavigateToFilePage(currentPage - 1);
         }
 
         // 下一页
         private void nextPage_button_Click(object sender, EventArgs e)
         {
-            currentPage = currentPage + 1;
+            NavigateToFilePage(currentPage + 1);
+        }
+
+        private void NavigateToFilePage(int targetPage)
+        {
+            if (sumPageCount <= 0 || targetPage < 1 || targetPage > sumPageCount || targetPage == currentPage)
+                return;
+
+            currentPage = targetPage;
             this.loadFileList(GetCurrentListDirId());
         }
 
-        // 当前文件列表的查询目录：选中了目录则查询该目录，否则查询当前用户全部文件（目录ID为0）。
-        private long GetCurrentListDirId()
+        // 返回当前已经展示的查询范围，不读取可能被右键操作改变的 currentSelectedNode。
+        private long? GetCurrentListDirId()
         {
-            if (currentSelectedNode != null && currentSelectedNode.Tag is chat_service.protocol.NetFileDto)
-            {
-                return ((chat_service.protocol.NetFileDto)currentSelectedNode.Tag).Id;
-            }
-            return 0;
+            return currentFileListDirectoryId;
         }
 
         // 文件列表全选
@@ -1696,19 +1804,7 @@ namespace chat_service
         private void all_file_refresh_button_Click(object sender, EventArgs e)
         {
             currentPage = 1;
-            if (null != currentSelectedNode)
-            {
-                chat_service.protocol.NetFileDto fileDto = (chat_service.protocol.NetFileDto)currentSelectedNode.Tag;
-                this.folder_create_time_label.Visible = true;
-                this.folder_create_time_label.Text = FormatFileTime(fileDto.GmtCreated);
-                this.folder_create_path_label.Visible = true;
-                this.folder_create_path_label.Text = fileDto.FilePath;
-                this.file_sum_count_label.Visible = true;
-                this.file_sum_count_label.Text = "0";
-
-                // 使用新协议刷新文件列表
-                this.loadFileList(fileDto.Id);
-            }
+            this.RefreshCurrentFileList();
         }
 
 
@@ -2007,8 +2103,8 @@ namespace chat_service
                 AppendTransferLog(file_upload_log_richTextBox,
                     "[ " + DateTime.Now.ToLocalTime().ToString() + " ] 文件 [ " + fileName + " ] 上传完成, fileId=" + (fileId != null ? fileId.ToString() : "未知") + "\r\n");
 
-                // 上传完成后刷新文件列表
-                PostToUi(delegate { loadFileList(dirId); });
+                // 上传完成后刷新用户当前正在查看的列表；顶层视图仍保持“全部文件”查询。
+                PostToUi(delegate { RefreshCurrentFileList(); });
             }
             catch (OperationCanceledException)
             {
@@ -2359,6 +2455,7 @@ namespace chat_service
                     this.personal_file_treeView.BeginInvoke(new MethodInvoker(delegate ()
                     {
                         this.personal_file_treeView.Nodes.Clear();
+                        currentSelectedNode = null;
                         foreach (var dto in roots)
                         {
                             TreeNode node = BuildNetDirectoryTreeNode(dto);
@@ -2368,7 +2465,8 @@ namespace chat_service
 
                         // 默认进入网盘即展示当前用户上传的全部文件
                         Main_Form.currentPage = 1;
-                        this.loadFileList(0);
+                        currentFileListDirectoryName = "全部文件";
+                        this.loadFileList(null);
                     }));
                 }
                 catch (Exception ex)

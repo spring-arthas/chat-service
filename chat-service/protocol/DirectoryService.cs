@@ -83,16 +83,22 @@ namespace chat_service.protocol
             EnsureSuccess(response, "目录删除");
         }
 
-        /// <summary>分页获取文件列表。响应为 FilePageDto（字段 recordList）。</summary>
-        public FilePageResult FetchFileList(long dirId, string fileName = "", int pageNum = 1, int pageSize = 10)
+        /// <summary>
+        /// 分页获取文件列表。dirId 为空或非正数时不发送目录条件，查询当前用户的全部文件；
+        /// 否则只查询指定目录。响应为 FilePageDto（字段 recordList）。
+        /// </summary>
+        public FilePageResult FetchFileList(long? dirId = null, string fileName = "", int pageNum = 1, int pageSize = 10)
         {
             var dict = new Dictionary<string, object>
             {
-                { "dirId", dirId },
                 { "fileName", fileName },
                 { "pageNum", pageNum },
                 { "pageSize", pageSize }
             };
+            if (dirId.HasValue && dirId.Value > 0)
+            {
+                dict.Add("dirId", dirId.Value);
+            }
             Frame request = FrameBuilder.Build(FrameTypeEnum.FileListReq, dict);
             Frame response = socketManager.SendFrameAndWait(request, FrameTypeEnum.FileResponse, 15000);
 

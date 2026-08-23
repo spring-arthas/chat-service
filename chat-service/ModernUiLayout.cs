@@ -29,6 +29,8 @@ namespace chat_service
         private string activeTransferStatusFilter = "全部";
         private Panel fileDetailPanel;
         private Button fileDetailToggleButton;
+        private Panel filePaginationPanel;
+        private Label filePageInfoLabel;
         private Panel fileDetailContentPanel;
         private Label fileDetailPlaceholderLabel;
         private Label fileDetailNameLabel;
@@ -42,6 +44,8 @@ namespace chat_service
         private Panel filePreviewPanel;
         private PictureBox filePreviewPictureBox;
         private Label filePreviewMessageLabel;
+        private Button fileDetailPlayButton;
+        private ToolTip fileDetailPlayToolTip;
         private bool currentPreviewIsVideo;
         private string currentPreviewFileName;
         private Label profileAccountLabel;
@@ -754,17 +758,111 @@ namespace chat_service
             file_list_dataGridView.BackgroundColor = Color.White;
             file_list_dataGridView.Paint -= DrawEmptyFileList;
             file_list_dataGridView.Paint += DrawEmptyFileList;
-            // 文件列表采用连续内容区，不再暴露旧式“上一页 / 下一页”按钮。
-            prePage_button.Visible = false;
-            nextPage_button.Visible = false;
             Panel fileBody = new Panel { Dock = DockStyle.Fill, BackColor = Color.White };
+            Panel fileListHost = new Panel { Dock = DockStyle.Fill, BackColor = Color.White };
+            filePaginationPanel = BuildFilePaginationBar();
             fileDetailPanel = BuildFileDetailPanel();
-            fileBody.Controls.Add(file_list_dataGridView);
+            // 分页栏属于文件列表，固定在表格正下方；传输中心展开时也不会被覆盖。
+            fileListHost.Controls.Add(file_list_dataGridView);
+            fileListHost.Controls.Add(filePaginationPanel);
+            fileBody.Controls.Add(fileListHost);
             fileBody.Controls.Add(fileDetailPanel);
             host.Controls.Add(fileBody);
             host.Controls.Add(tools);
             host.Controls.Add(titleRow);
             CloseFileDetailPanel();
+        }
+
+        private Panel BuildFilePaginationBar()
+        {
+            Panel bar = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 49,
+                BackColor = Color.White,
+                Padding = Padding.Empty
+            };
+            Panel divider = new Panel { Dock = DockStyle.Top, Height = 1, BackColor = UiTheme.Border };
+            TableLayoutPanel controls = new TableLayoutPanel
+            {
+                Dock = DockStyle.Right,
+                Width = 336,
+                ColumnCount = 3,
+                RowCount = 1,
+                BackColor = Color.White,
+                Padding = new Padding(0, 8, 0, 7)
+            };
+            controls.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 76F));
+            controls.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            controls.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 76F));
+            controls.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+
+            prePage_button.Visible = true;
+            prePage_button.Anchor = AnchorStyles.None;
+            prePage_button.Dock = DockStyle.Fill;
+            prePage_button.Margin = new Padding(0, 0, 8, 0);
+            prePage_button.Text = "上一页";
+            prePage_button.AccessibleName = "文件列表上一页";
+            UiTheme.StyleButton(prePage_button, UiTheme.Kind.Default);
+
+            filePageInfoLabel = new Label
+            {
+                Text = "第 1 / 1 页 · 共 0 个文件",
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0, 0, 8, 0),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Font = new Font("微软雅黑", 9F),
+                ForeColor = UiTheme.TextSecondary,
+                AutoEllipsis = true
+            };
+
+            nextPage_button.Visible = true;
+            nextPage_button.Anchor = AnchorStyles.None;
+            nextPage_button.Dock = DockStyle.Fill;
+            nextPage_button.Margin = Padding.Empty;
+            nextPage_button.Text = "下一页";
+            nextPage_button.AccessibleName = "文件列表下一页";
+            UiTheme.StyleButton(nextPage_button, UiTheme.Kind.Default);
+
+            controls.Controls.Add(prePage_button, 0, 0);
+            controls.Controls.Add(filePageInfoLabel, 1, 0);
+            controls.Controls.Add(nextPage_button, 2, 0);
+            bar.Resize += delegate
+            {
+                // 宽屏时保持紧凑右对齐；详情栏打开或窗口收窄时，自适应剩余列表宽度。
+                controls.Width = Math.Min(336, Math.Max(0, bar.ClientSize.Width));
+            };
+            bar.Controls.Add(controls);
+            bar.Controls.Add(divider);
+            UpdateFilePagination(0, 1, 0);
+            return bar;
+        }
+
+        private void SetFilePaginationLoading()
+        {
+            if (filePageInfoLabel == null) return;
+            filePageInfoLabel.Text = "正在加载...";
+            prePage_button.Enabled = false;
+            nextPage_button.Enabled = false;
+        }
+
+        private void UpdateFilePagination(long totalCount, int page, int totalPages)
+        {
+            if (filePageInfoLabel == null) return;
+            int displayTotalPages = Math.Max(1, totalPages);
+            int displayPage = totalPages <= 0 ? 1 : Math.Max(1, Math.Min(page, totalPages));
+            filePageInfoLabel.Text = string.Format(
+                "第 {0} / {1} 页 · 共 {2} 个文件", displayPage, displayTotalPages, totalCount);
+            prePage_button.Enabled = totalPages > 0 && displayPage > 1;
+            nextPage_button.Enabled = totalPages > 0 && displayPage < totalPages;
+        }
+
+        private void ShowFilePaginationError()
+        {
+            if (filePageInfoLabel == null) return;
+            filePageInfoLabel.Text = "列表加载失败";
+            prePage_button.Enabled = false;
+            nextPage_button.Enabled = false;
         }
 
         private Panel BuildFileDetailPanel()
@@ -839,13 +937,35 @@ namespace chat_service
                 Font = new Font("微软雅黑", 9F),
                 ForeColor = UiTheme.TextSecondary
             };
-            filePreviewPictureBox.Paint += DrawVideoPreviewOverlay;
+            fileDetailPlayButton = new Button
+            {
+                Text = "▶",
+                Size = new Size(54, 54),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(39, 48, 65),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI Symbol", 17F, FontStyle.Regular),
+                Cursor = Cursors.Hand,
+                Visible = false,
+                TabStop = true,
+                AccessibleName = "在线播放视频"
+            };
+            fileDetailPlayButton.FlatAppearance.BorderSize = 0;
+            fileDetailPlayButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(51, 65, 84);
+            fileDetailPlayButton.FlatAppearance.MouseDownBackColor = Color.FromArgb(66, 82, 104);
+            fileDetailPlayToolTip = new ToolTip(components);
+            fileDetailPlayToolTip.SetToolTip(fileDetailPlayButton, "在线播放");
+            fileDetailPlayButton.Click += delegate { OpenSelectedVideoPlayer(); };
+            filePreviewPanel.Resize += delegate { PositionFileDetailPlayButton(); };
             filePreviewPictureBox.Click += delegate
             {
-                if (!currentPreviewIsVideo && filePreviewPictureBox.Image != null) OpenImagePreview();
+                if (currentPreviewIsVideo) OpenSelectedVideoPlayer();
+                else if (filePreviewPictureBox.Image != null) OpenImagePreview();
             };
             filePreviewPanel.Controls.Add(filePreviewPictureBox);
             filePreviewPanel.Controls.Add(filePreviewMessageLabel);
+            filePreviewPanel.Controls.Add(fileDetailPlayButton);
+            PositionFileDetailPlayButton();
             fileDetailNameLabel = new Label
             {
                 Dock = DockStyle.Top,
@@ -938,6 +1058,7 @@ namespace chat_service
         private void ShowFileDetailLoading(string fileName)
         {
             if (fileDetailPlaceholderLabel == null || fileDetailContentPanel == null) return;
+            SetFileDetailPlayButtonVisible(false);
             OpenFileDetailPanel();
             fileDetailContentPanel.Visible = false;
             fileDetailPlaceholderLabel.Text = "正在加载\r\n" + (fileName ?? "文件详情");
@@ -959,19 +1080,53 @@ namespace chat_service
             currentPreviewIsVideo = video;
             currentPreviewFileName = fileName ?? "文件预览";
             filePreviewPictureBox.Image = preview;
-            filePreviewPictureBox.Cursor = video ? Cursors.Default : Cursors.Hand;
+            filePreviewPictureBox.Cursor = Cursors.Hand;
             filePreviewMessageLabel.Visible = false;
             filePreviewPictureBox.Visible = true;
             filePreviewPictureBox.Invalidate();
+            SetFileDetailPlayButtonVisible(video && CanPlaySelectedVideo());
         }
 
         private void ShowFilePreviewUnavailable(string message)
         {
             ClearFilePreviewImage();
-            currentPreviewIsVideo = false;
+            currentPreviewIsVideo = CanPlaySelectedVideo();
             filePreviewMessageLabel.Text = string.IsNullOrWhiteSpace(message) ? "此文件暂不支持预览" : message;
             filePreviewMessageLabel.Visible = true;
             filePreviewPictureBox.Visible = false;
+            SetFileDetailPlayButtonVisible(currentPreviewIsVideo);
+        }
+
+        private void SetFileDetailPlayButtonVisible(bool visible)
+        {
+            if (fileDetailPlayButton == null) return;
+            fileDetailPlayButton.Visible = visible;
+            if (visible)
+            {
+                PositionFileDetailPlayButton();
+                fileDetailPlayButton.BringToFront();
+            }
+        }
+
+        private bool CanPlaySelectedVideo()
+        {
+            return selectedFileDetail != null
+                && chat_service.protocol.MediaPlaybackService.IsPlayableVideo(selectedFileDetail.FileName)
+                && !selectedFileDetail.IsDeleted
+                && selectedFileDetail.IsExistBoolean;
+        }
+
+        private void PositionFileDetailPlayButton()
+        {
+            if (filePreviewPanel == null || fileDetailPlayButton == null) return;
+            int contentWidth = Math.Max(0, filePreviewPanel.ClientSize.Width
+                - filePreviewPanel.Padding.Horizontal);
+            int contentHeight = Math.Max(0, filePreviewPanel.ClientSize.Height
+                - filePreviewPanel.Padding.Vertical);
+            fileDetailPlayButton.Left = filePreviewPanel.Padding.Left
+                + Math.Max(0, (contentWidth - fileDetailPlayButton.Width) / 2);
+            fileDetailPlayButton.Top = filePreviewPanel.Padding.Top
+                + Math.Max(0, (contentHeight - fileDetailPlayButton.Height) / 2);
         }
 
         private void ClearFilePreviewImage()
@@ -979,26 +1134,6 @@ namespace chat_service
             Image previous = filePreviewPictureBox == null ? null : filePreviewPictureBox.Image;
             if (filePreviewPictureBox != null) filePreviewPictureBox.Image = null;
             if (previous != null) previous.Dispose();
-        }
-
-        private void DrawVideoPreviewOverlay(object sender, PaintEventArgs e)
-        {
-            if (!currentPreviewIsVideo || filePreviewPictureBox == null || filePreviewPictureBox.Image == null) return;
-            int size = 48;
-            int x = (filePreviewPictureBox.ClientSize.Width - size) / 2;
-            int y = (filePreviewPictureBox.ClientSize.Height - size) / 2;
-            using (SolidBrush circle = new SolidBrush(Color.FromArgb(176, 23, 32, 51)))
-            using (SolidBrush triangle = new SolidBrush(Color.White))
-            {
-                e.Graphics.FillEllipse(circle, x, y, size, size);
-                Point[] points =
-                {
-                    new Point(x + 20, y + 14),
-                    new Point(x + 20, y + 34),
-                    new Point(x + 35, y + 24)
-                };
-                e.Graphics.FillPolygon(triangle, points);
-            }
         }
 
         private void OpenImagePreview()
@@ -1063,6 +1198,8 @@ namespace chat_service
         private void ResetFileDetail()
         {
             if (fileDetailPlaceholderLabel == null || fileDetailContentPanel == null) return;
+            selectedFileDetail = null;
+            SetFileDetailPlayButtonVisible(false);
             ClearFilePreviewImage();
             fileDetailContentPanel.Visible = false;
             fileDetailPlaceholderLabel.Text = "▤\r\n\r\n选择文件查看详情";
@@ -1074,6 +1211,8 @@ namespace chat_service
         private void ShowFileDetail(chat_service.protocol.NetFileDto detail)
         {
             if (detail == null || fileDetailContentPanel == null) return;
+            selectedFileDetail = detail;
+            SetFileDetailPlayButtonVisible(CanPlaySelectedVideo());
             fileDetailNameLabel.Text = string.IsNullOrWhiteSpace(detail.FileName) ? "未命名文件" : detail.FileName;
             fileDetailTypeLabel.Text = string.IsNullOrWhiteSpace(detail.FileType) ? GetFileTypeText(detail.FileName) : detail.FileType;
             fileDetailSizeLabel.Text = detail.FileSize.HasValue ? getFileSize(detail.FileSize.Value) : "—";
@@ -1091,6 +1230,8 @@ namespace chat_service
         private void ShowFileDetailError(string message)
         {
             if (fileDetailPlaceholderLabel == null || fileDetailContentPanel == null) return;
+            selectedFileDetail = null;
+            SetFileDetailPlayButtonVisible(false);
             fileDetailContentPanel.Visible = false;
             fileDetailPlaceholderLabel.Text = "详情加载失败\r\n" + (string.IsNullOrWhiteSpace(message) ? "请稍后重试" : message);
             fileDetailPlaceholderLabel.Visible = true;
